@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Processing Module Backend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .method-get { color: #10B981; }
+        .method-post { color: #3B82F6; }
+        .method-put { color: #F59E0B; }
+        .method-delete { color: #EF4444; }
+        pre {
+            background-color: #1E293B;
+            color: #F8FAFC;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        .endpoint-card {
+            border-left: 4px solid #fff2cc;
+            transition: all 0.2s ease;
+            background-color: #fafafa;
+        }
+        .endpoint-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .header-bg {
+            background-color: #fff2cc;
+        }
+        .huggingface-badge {
+            background-color: #FFD21E;
+            color: black;
+        }
+        .kafka-badge {
+            background-color: #000000;
+            color: white;
+        }
+        .gpu-badge {
+            background-color: #76B900;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="mb-12 text-center">
+            <div class="header-bg rounded-lg p-6 shadow-inner">
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Module 3: Core Processing Backend</h1>
+                <p class="text-xl text-gray-700">AI-driven code generation, debugging, coordination, and optimization using LLMs</p>
+                <div class="mt-4 flex justify-center gap-4">
+                    <span class="bg-yellow-100 text-yellow-800 text-sm font-medium px-3 py-1 rounded-full">AI Buildability: 3/5</span>
+                    <span class="huggingface-badge text-sm font-medium px-3 py-1 rounded-full">Hugging Face</span>
+                    <span class="kafka-badge text-sm font-medium px-3 py-1 rounded-full">Kafka</span>
+                    <span class="gpu-badge text-sm font-medium px-3 py-1 rounded-full">GPU Support</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🚀 Quick Start</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <ol class="list-decimal pl-5 space-y-3">
+                    <li>Install Python 3.9+, CUDA (for GPU support), and Kafka</li>
+                    <li>Clone the repository: <code class="bg-gray-100 px-2 py-1 rounded">git clone https://github.com/yourrepo/core-processing.git</code></li>
+                    <li>Create virtual environment: <code class="bg-gray-100 px-2 py-1 rounded">python -m venv venv</code></li>
+                    <li>Install dependencies: <code class="bg-gray-100 px-2 py-1 rounded">pip install -r requirements.txt</code></li>
+                    <li>Create a <code class="bg-gray-100 px-2 py-1 rounded">.env</code> file:
+                        <pre class="mt-3">KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+HF_API_TOKEN=your_huggingface_token
+MODEL_NAME=bigcode/starcoder
+USE_GPU=True
+MAX_SEQUENCE_LENGTH=2048
+TEMPERATURE=0.7</pre>
+                    </li>
+                    <li>Start the server: <code class="bg-gray-100 px-2 py-1 rounded">uvicorn main:app --reload</code></li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">📦 Project Structure</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <pre>core-processing/
+├── app/                      # Application core
+│   ├── __init__.py
+│   ├── main.py               # FastAPI app
+│   ├── models/               # Data models
+│   │   ├── __init__.py
+│   │   ├── llm_models.py     # LLM schemas
+│   │   └── evaluation.py     # Evaluation metrics
+│   ├── services/             # Business logic
+│   │   ├── __init__.py
+│   │   ├── llm_service.py    # LLM integration
+│   │   ├── debugger.py       # Debugging service
+│   │   ├── optimizer.py      # Optimization service
+│   │   └── evaluator.py      # Evaluation service
+│   ├── agents/               # Agent implementations
+│   │   ├── code_agent.py
+│   │   ├── debug_agent.py
+│   │   └── eval_agent.py
+│   └── api/                  # API endpoints
+│       ├── v1/               # API version 1
+│       │   ├── generation.py # Code generation
+│       │   ├── debug.py      # Debugging
+│       │   └── eval.py       # Evaluation
+├── tests/                    # Tests
+├── requirements.txt          # Python dependencies
+└── Dockerfile                # Container configuration</pre>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🧠 LLM Service Implementation</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- LLM Service -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">app/services/llm_service.py</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from typing import Dict, Any, List, Optional
+import torch
+import logging
+from functools import lru_cache
+
+class LLMService:
+    def __init__(
+        self,
+        model_name: str,
+        use_gpu: bool = False,
+        max_sequence_length: int = 2048,
+        temperature: float = 0.7
+    ):
+        self.model_name = model_name
+        self.use_gpu = use_gpu
+        self.max_sequence_length = max_sequence_length
+        self.temperature = temperature
+        self.device = "cuda" if use_gpu and torch.cuda.is_available() else "cpu"
+        
+        self.tokenizer = self._load_tokenizer()
+        self.model = self._load_model()
+        self.generation_pipeline = self._create_pipeline()
+
+    def _load_tokenizer(self):
+        """Load the tokenizer for the specified model"""
+        try:
+            return AutoTokenizer.from_pretrained(
+                self.model_name,
+                padding_side="left"
+            )
+        except Exception as e:
+            logging.error(f"Failed to load tokenizer: {e}")
+            raise
+
+    def _load_model(self):
+        """Load the LLM model"""
+        try:
+            model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                trust_remote_code=True,
+                torch_dtype=torch.float16 if self.use_gpu else torch.float32
+            )
+            return model.to(self.device)
+        except Exception as e:
+            logging.error(f"Failed to load model: {e}")
+            raise
+
+    def _create_pipeline(self):
+        """Create a text generation pipeline"""
+        return pipeline(
+            "text-generation",
+            model=self.model,
+            tokenizer=self.tokenizer,
+            device=0 if self.device == "cuda" else -1
+        )
+
+    def generate_code(
+        self,
+        prompt: str,
+        max_length: Optional[int] = None,
+        temperature: Optional[float] = None,
+        stop_sequences: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """Generate code from a natural language prompt"""
+        try:
+            max_length = max_length or self.max_sequence_length
+            temperature = temperature or self.temperature
+            
+            generation_config = {
+                "max_length": max_length,
+                "temperature": temperature,
+                "do_sample": True,
+                "top_p": 0.95,
+                "top_k": 50,
+                "pad_token_id": self.tokenizer.eos_token_id
+            }
+            
+            if stop_sequences:
+                generation_config["eos_token_id"] = [
+                    self.tokenizer.encode(stop_seq)[0] 
+                    for stop_seq in stop_sequences
+                ]
+
+            result = self.generation_pipeline(
+                prompt,
+                **generation_config
+            )
+            
+            return {
+                "generated_text": result[0]["generated_text"],
+                "prompt": prompt,
+                "model": self.model_name,
+                "parameters": generation_config
+            }
+        except Exception as e:
+            logging.error(f"Code generation failed: {e}")
+            raise
+
+    @lru_cache(maxsize=100)
+    def get_model_info(self) -> Dict[str, Any]:
+        """Get information about the loaded model"""
+        return {
+            "model_name": self.model_name,
+            "device": self.device,
+            "parameters": f"{sum(p.numel() for p in self.model.parameters()):,}",
+            "max_sequence_length": self.max_sequence_length,
+            "tokenizer_vocab_size": self.tokenizer.vocab_size
+        }</pre>
+                    </div>
+                </div>
+
+                <!-- Code Agent -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">app/agents/code_agent.py</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>from typing import Dict, Any, List, Optional
+import logging
+from app.services.llm_service import LLMService
+from app.services.message_bus import MessageBusService
+
+class CodeAgent:
+    def __init__(
+        self,
+        llm_service: LLMService,
+        message_bus: MessageBusService
+    ):
+        self.llm = llm_service
+        self.message_bus = message_bus
+        self._register_consumers()
+
+    def _register_consumers(self):
+        """Register message bus consumers for code generation tasks"""
+        self.message_bus.subscribe(
+            "code_generation_requests",
+            self.handle_generation_request
+        )
+        self.message_bus.subscribe(
+            "code_optimization_requests",
+            self.handle_optimization_request
+        )
+
+    def handle_generation_request(self, message: Dict[str, Any]):
+        """Process incoming code generation requests"""
+        try:
+            task_id = message.get("task_id")
+            prompt = message.get("prompt")
+            context = message.get("context", "")
+            language = message.get("language", "python")
+            
+            if not all([task_id, prompt]):
+                logging.warning("Invalid generation request format")
+                return
+
+            full_prompt = self._build_prompt(prompt, context, language)
+            result = self.llm.generate_code(full_prompt)
+            
+            self.message_bus.publish("code_generation_results", {
+                "task_id": task_id,
+                "status": "completed",
+                "generated_code": result["generated_text"],
+                "metadata": {
+                    "model": result["model"],
+                    "parameters": result["parameters"]
+                }
+            })
+        except Exception as e:
+            logging.error(f"Generation request failed: {e}")
+            self.message_bus.publish("code_generation_results", {
+                "task_id": task_id,
+                "status": "failed",
+                "error": str(e)
+            })
+
+    def handle_optimization_request(self, message: Dict[str, Any]):
+        """Process code optimization requests"""
+        try:
+            task_id = message.get("task_id")
+            code = message.get("code")
+            optimization_goal = message.get("goal", "performance")
+            
+            if not all([task_id, code]):
+                logging.warning("Invalid optimization request format")
+                return
+
+            prompt = self._build_optimization_prompt(code, optimization_goal)
+            result = self.llm.generate_code(prompt)
+            
+            self.message_bus.publish("code_optimization_results", {
+                "task_id": task_id,
+                "status": "completed",
+                "optimized_code": result["generated_text"],
+                "original_code": code,
+                "optimization_goal": optimization_goal
+            })
+        except Exception as e:
+            logging.error(f"Optimization request failed: {e}")
+            self.message_bus.publish("code_optimization_results", {
+                "task_id": task_id,
+                "status": "failed",
+                "error": str(e)
+            })
+
+    def _build_prompt(self, prompt: str, context: str, language: str) -> str:
+        """Build a structured prompt for code generation"""
+        return f"""Below is a request to generate {language} code. 
+Context: {context}
+
+Generate complete, functional code that satisfies this request:
+{prompt}
+
+The code should be well-structured, documented, and follow best practices for {language}.
+Return only the code without additional explanation:"""
+
+    def _build_optimization_prompt(self, code: str, goal: str) -> str:
+        """Build a prompt for code optimization"""
+        optimization_focus = {
+            "performance": "execution speed and resource efficiency",
+            "readability": "code clarity and maintainability",
+            "security": "security best practices and vulnerability prevention"
+        }.get(goal, "improvement")
+        
+        return f"""Optimize the following code with a focus on {optimization_focus}:
+{code}
+
+Provide the optimized version of this code with a brief explanation of the changes made.
+Optimized code:"""</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🐞 Debugging Service</h2>
+
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="bg-gray-800 text-white px-4 py-3">
+                    <h3 class="font-semibold">app/services/debugger.py</h3>
+                </div>
+                <div class="p-4">
+                    <pre>from typing import Dict, Any, List, Tuple
+import logging
+from app.services.llm_service import LLMService
+from app.models.llm_models import DebuggingResult
+
+class DebuggingService:
+    def __init__(self, llm_service: LLMService):
+        self.llm = llm_service
+
+    def debug_code(
+        self,
+        code: str,
+        error: Optional[str] = None,
+        language: str = "python"
+    ) -> DebuggingResult:
+        """Debug code with optional error message"""
+        try:
+            prompt = self._build_debug_prompt(code, error, language)
+            result = self.llm.generate_code(prompt, temperature=0.3)
+            
+            fixed_code, explanation = self._parse_debug_response(
+                result["generated_text"]
+            )
+            
+            return DebuggingResult(
+                original_code=code,
+                fixed_code=fixed_code,
+                explanation=explanation,
+                error_context=error,
+                language=language,
+                success=True
+            )
+        except Exception as e:
+            logging.error(f"Debugging failed: {e}")
+            return DebuggingResult(
+                original_code=code,
+                error=str(e),
+                success=False
+            )
+
+    def analyze_code_quality(
+        self,
+        code: str,
+        language: str = "python"
+    ) -> Dict[str, Any]:
+        """Analyze code quality and provide suggestions"""
+        try:
+            prompt = self._build_analysis_prompt(code, language)
+            result = self.llm.generate_code(prompt, temperature=0.2)
+            
+            return {
+                "code": code,
+                "analysis": result["generated_text"],
+                "language": language,
+                "status": "completed"
+            }
+        except Exception as e:
+            logging.error(f"Code analysis failed: {e}")
+            return {
+                "code": code,
+                "error": str(e),
+                "status": "failed"
+            }
+
+    def _build_debug_prompt(
+        self,
+        code: str,
+        error: Optional[str],
+        language: str
+    ) -> str:
+        """Build a debugging prompt"""
+        error_context = f"\nThe following error occurred:\n{error}" if error else ""
+        return f"""Debug the following {language} code:{error_context}
+{code}
+
+Provide the fixed code and a concise explanation of:
+1. What was wrong with the original code
+2. How your solution fixes the problem
+
+Format your response as:
+FIXED CODE:
+```{language}
+// fixed code here
+```
+
+EXPLANATION:
+// explanation here"""
+
+    def _build_analysis_prompt(self, code: str, language: str) -> str:
+        """Build a code analysis prompt"""
+        return f"""Analyze the following {language} code and provide:
+1. Quality assessment (1-10 scale)
+2. Potential issues
+3. Improvement suggestions
+4. Security considerations
+
+Code:
+{code}
+
+Analysis:"""
+
+    def _parse_debug_response(self, response: str) -> Tuple[str, str]:
+        """Parse the debugging response into fixed code and explanation"""
+        try:
+            parts = response.split("EXPLANATION:")
+            fixed_code = parts[0].replace("FIXED CODE:", "").strip()
+            explanation = parts[1].strip() if len(parts) > 1 else ""
+            return fixed_code, explanation
+        except Exception as e:
+            logging.error(f"Failed to parse debug response: {e}")
+            return response, "Unable to parse explanation"</pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">📊 Evaluation Service</h2>
+
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="bg-gray-800 text-white px-4 py-3">
+                    <h3 class="font-semibold">app/services/evaluator.py</h3>
+                </div>
+                <div class="p-4">
+                    <pre>from typing import Dict, Any, List, Optional
+import logging
+import ast
+import astor
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+from app.services.llm_service import LLMService
+
+class EvaluationService:
+    def __init__(self, llm_service: LLMService):
+        self.llm = llm_service
+
+    def evaluate_code_generation(
+        self,
+        generated_code: str,
+        reference_code: Optional[str] = None,
+        test_cases: Optional[List[Dict]] = None,
+        language: str = "python"
+    ) -> Dict[str, Any]:
+        """Evaluate generated code against reference or test cases"""
+        try:
+            if test_cases:
+                return self._evaluate_with_test_cases(
+                    generated_code,
+                    test_cases,
+                    language
+                )
+            elif reference_code:
+                return self._evaluate_against_reference(
+                    generated_code,
+                    reference_code,
+                    language
+                )
+            else:
+                return self._evaluate_with_llm(
+                    generated_code,
+                    language
+                )
+        except Exception as e:
+            logging.error(f"Evaluation failed: {e}")
+            return {
+                "status": "failed",
+                "error": str(e),
+                "generated_code": generated_code
+            }
+
+    def _evaluate_with_test_cases(
+        self,
+        code: str,
+        test_cases: List[Dict],
+        language: str
+    ) -> Dict[str, Any]:
+        """Evaluate code by executing test cases"""
+        if language != "python":
+            return self._evaluate_with_llm(
+                code,
+                language,
+                f"Test cases: {test_cases}"
+            )
+
+        try:
+            # Dynamically create a test function
+            namespace = {}
+            exec(code, namespace)
+            test_func = namespace.get('solution', None)
+            
+            if not test_func or not callable(test_func):
+                raise ValueError("No callable 'solution' function found in code")
+
+            # Run test cases
+            results = []
+            for case in test_cases:
+                input_data = case["input"]
+                expected = case["output"]
+                actual = test_func(*input_data)
+                results.append(actual == expected)
+
+            accuracy = sum(results) / len(results)
+            return {
+                "status": "completed",
+                "accuracy": accuracy,
+                "passed_tests": sum(results),
+                "total_tests": len(results),
+                "language": language
+            }
+        except Exception as e:
+            logging.error(f"Test case evaluation failed: {e}")
+            raise
+
+    def _evaluate_against_reference(
+        self,
+        generated_code: str,
+        reference_code: str,
+        language: str
+    ) -> Dict[str, Any]:
+        """Evaluate by comparing with reference implementation"""
+        if language != "python":
+            return self._evaluate_with_llm(
+                generated_code,
+                language,
+                f"Reference code: {reference_code}"
+            )
+
+        try:
+            # Parse ASTs for structural comparison
+            gen_ast = ast.parse(generated_code)
+            ref_ast = ast.parse(reference_code)
+            
+            # Compare AST structures
+            similarity_score = self._compare_asts(gen_ast, ref_ast)
+            
+            return {
+                "status": "completed",
+                "similarity_score": similarity_score,
+                "language": language,
+                "evaluation_method": "ast_comparison"
+            }
+        except Exception as e:
+            logging.error(f"Reference comparison failed: {e}")
+            raise
+
+    def _evaluate_with_llm(
+        self,
+        code: str,
+        language: str,
+        context: str = ""
+    ) -> Dict[str, Any]:
+        """Use LLM to evaluate code quality"""
+        prompt = f"""Evaluate the following {language} code:
+{code}
+
+{context}
+
+Provide:
+1. Functionality score (1-10)
+2. Code quality score (1-10)
+3. Three specific strengths
+4. Three specific weaknesses
+5. Improvement suggestions
+
+Evaluation:"""
+        
+        result = self.llm.generate_code(prompt, temperature=0.3)
+        return {
+            "status": "completed",
+            "evaluation": result["generated_text"],
+            "language": language,
+            "evaluation_method": "llm_analysis"
+        }
+
+    def _compare_asts(self, ast1: ast.AST, ast2: ast.AST) -> float:
+        """Compare two ASTs for structural similarity"""
+        # Convert ASTs to normalized strings
+        str1 = astor.to_source(ast1)
+        str2 = astor.to_source(ast2)
+        
+        # Simple similarity metric (could be enhanced)
+        lines1 = str1.splitlines()
+        lines2 = str2.splitlines()
+        
+        common_lines = set(lines1) & set(lines2)
+        similarity = len(common_lines) / max(len(lines1), len(lines2))
+        
+        return similarity</pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🔌 API Endpoints</h2>
+
+            <div class="space-y-4">
+                <!-- Generation Endpoints -->
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/v1/generate</span>
+                    </div>
+                    <p class="text-gray-700">Generate code from a natural language prompt</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">{"prompt": "Python function to calculate factorial", "language": "python", "context": "For educational use"}</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/v1/generate/batch</span>
+                    </div>
+                    <p class="text-gray-700">Batch code generation with multiple prompts</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">{"tasks": [{"prompt": "...", "task_id": "1"}, ...]}</span>
+                    </div>
+                </div>
+
+                <!-- Debugging Endpoints -->
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/v1/debug</span>
+                    </div>
+                    <p class="text-gray-700">Debug code with optional error message</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">{"code": "def func(x): return x * 2", "error": "TypeError", "language": "python"}</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/v1/analyze</span>
+                    </div>
+                    <p class="text-gray-700">Analyze code quality and provide suggestions</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">{"code": "def func(x): return x * 2", "language": "python"}</span>
+                    </div>
+                </div>
+
+                <!-- Evaluation Endpoints -->
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/v1/evaluate</span>
+                    </div>
+                    <p class="text-gray-700">Evaluate generated code against reference or test cases</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">{"generated_code": "...", "test_cases": [{"input": [5], "output": 120}], "language": "python"}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🐳 Docker Deployment</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-4">Dockerfile (GPU version)</h3>
+                <pre>FROM nvidia/cuda:11.8.0-base
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.9 \
+    python3-pip \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install specific versions of PyTorch with CUDA support
+RUN pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2 \
+    --index-url https://download.pytorch.org/whl/cu118
+
+# Copy application code
+COPY . .
+
+# Environment variables
+ENV PYTHONPATH=/app
+ENV USE_GPU=True
+ENV HF_HOME=/app/cache
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]</pre>
+
+                <h3 class="text-xl font-semibold mt-6 mb-4">docker-compose.yml</h3>
+                <pre>version: '3.8'
+
+services:
+  core-processing:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - HF_API_TOKEN=${HF_API_TOKEN}
+      - MODEL_NAME=${MODEL_NAME:-bigcode/starcoder}
+      - USE_GPU=${USE_GPU:-True}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      - kafka
+
+  kafka:
+    image: bitnami/kafka:3.1
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka_data:/bitnami
+
+volumes:
+  kafka_data:</pre>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">📡 Event Schema</h2>
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="bg-gray-800 text-white px-4 py-3">
+                    <h3 class="font-semibold">app/models/llm_models.py</h3>
+                </div>
+                <div class="p-4">
+                    <pre>from pydantic import BaseModel
+from typing import Optional, Dict, Any, List
+from enum import Enum
+from datetime import datetime
+
+class GenerationTaskStatus(str, Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+class CodeGenerationRequest(BaseModel):
+    task_id: str
+    prompt: str
+    context: Optional[str] = None
+    language: str = "python"
+    parameters: Optional[Dict[str, Any]] = None
+    created_at: datetime = datetime.utcnow()
+
+class CodeGenerationResult(BaseModel):
+    task_id: str
+    status: GenerationTaskStatus
+    generated_code: Optional[str] = None
+    prompt: Optional[str] = None
+    error: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+    completed_at: Optional[datetime] = None
+
+class DebuggingRequest(BaseModel):
+    task_id: str
+    code: str
+    error: Optional[str] = None
+    language: str = "python"
+
+class DebuggingResult(BaseModel):
+    task_id: str
+    original_code: str
+    fixed_code: str
+    explanation: str
+    error_context: Optional[str] = None
+    language: str
+    success: bool
+    error: Optional[str] = None
+
+class EvaluationRequest(BaseModel):
+    task_id: str
+    generated_code: str
+    reference_code: Optional[str] = None
+    test_cases: Optional[List[Dict[str, Any]]] = None
+    language: str = "python"
+
+class EvaluationResult(BaseModel):
+    task_id: str
+    status: GenerationTaskStatus
+    metrics: Optional[Dict[str, Any]] = None
+    evaluation: Optional[str] = None
+    error: Optional[str] = None</pre>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-gray-600 mt-12">
+            <p>Core Processing Module Backend - Complete Implementation</p>
+            <p class="mt-2">Provides AI-driven code generation, debugging, optimization, and evaluation services</p>
+        </footer>
+    </div>
+</body>
+</html>

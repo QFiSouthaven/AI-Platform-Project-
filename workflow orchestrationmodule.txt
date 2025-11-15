@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Orchestration Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --segment-color: #d5e8d4;
+            --segment-dark: #b8d0b6;
+        }
+        
+        .segment-bg {
+            background-color: var(--segment-color);
+        }
+        
+        .segment-border {
+            border-color: var(--segment-dark);
+        }
+        
+        .segment-hover:hover {
+            background-color: var(--segment-dark);
+        }
+        
+        .workflow-card {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .workflow-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-bar {
+            height: 6px;
+            transition: width 0.5s ease;
+        }
+        
+        .task-node {
+            width: 24px;
+            height: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .task-node:hover {
+            transform: scale(1.2);
+        }
+        
+        .connector-line {
+            position: absolute;
+            height: 2px;
+            background-color: #94a3b8;
+            z-index: 0;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .tech-icon {
+            transition: all 0.3s ease;
+        }
+        
+        .tech-icon:hover {
+            transform: scale(1.2);
+        }
+        
+        .dependency-badge {
+            transition: all 0.2s ease;
+        }
+        
+        .dependency-badge:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header Section -->
+        <header class="mb-8">
+            <div class="segment-bg rounded-xl p-6 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">Workflow Orchestration Module</h1>
+                        <p class="text-gray-600 mt-2">Analyzes requirements, orchestrates workflows, and schedules tasks for execution</p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex items-center">
+                        <div class="mr-4">
+                            <span class="text-sm font-medium text-gray-500">AI Buildability</span>
+                            <div class="flex mt-1">
+                                <div class="flex">
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                    <i class="fas fa-star text-gray-300"></i>
+                                </div>
+                                <span class="ml-2 text-sm font-medium">4/5</span>
+                            </div>
+                        </div>
+                        <button class="bg-white segment-border border-2 px-4 py-2 rounded-lg font-medium segment-hover flex items-center">
+                            <i class="fas fa-play-circle mr-2"></i> Deploy Module
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Workflow Builder Panel -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="segment-bg px-6 py-4 border-b segment-border">
+                    <h2 class="text-xl font-semibold text-gray-800">Workflow Builder</h2>
+                </div>
+                <div class="p-6">
+                    <div class="relative h-64 mb-6" id="workflowCanvas">
+                        <!-- This will be populated with JavaScript -->
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <button class="segment-bg segment-border border-2 px-4 py-2 rounded-lg font-medium segment-hover flex items-center">
+                            <i class="fas fa-plus-circle mr-2"></i> Add Task
+                        </button>
+                        <div class="flex space-x-2">
+                            <button class="bg-gray-100 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 flex items-center">
+                                <i class="fas fa-save mr-2"></i> Save
+                            </button>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 flex items-center">
+                                <i class="fas fa-rocket mr-2"></i> Execute
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Panel -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="segment-bg px-6 py-4 border-b segment-border">
+                    <h2 class="text-xl font-semibold text-gray-800">Execution Status</h2>
+                </div>
+                <div class="p-6">
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Current Workflow</span>
+                            <span class="text-sm font-medium text-blue-600">Data Processing v2.1</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar bg-green-500 rounded-full" style="width: 65%"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-xs text-gray-500">
+                            <span>5/8 tasks completed</span>
+                            <span>65%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-check text-green-500"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Data Validation</p>
+                                <p class="text-xs text-gray-500">Completed 2 min ago</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-cog text-blue-500 animate-spin"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Feature Extraction</p>
+                                <p class="text-xs text-gray-500">In progress (32%)</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-clock text-gray-500"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">Model Training</p>
+                                <p class="text-xs text-gray-500">Pending</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="w-full mt-6 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-history mr-2"></i> View Execution History
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technology Stack Section -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+            <div class="segment-bg px-6 py-4 border-b segment-border">
+                <h2 class="text-xl font-semibold text-gray-800">Technology Stack</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="tech-icon flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" class="w-16 h-16 mb-3" alt="Python">
+                        <span class="font-medium">Python/FastAPI</span>
+                        <span class="text-xs text-gray-500 mt-1">Backend</span>
+                    </div>
+                    
+                    <div class="tech-icon flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" class="w-16 h-16 mb-3" alt="PostgreSQL">
+                        <span class="font-medium">PostgreSQL</span>
+                        <span class="text-xs text-gray-500 mt-1">Database</span>
+                    </div>
+                    
+                    <div class="tech-icon flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apachekafka/apachekafka-original.svg" class="w-16 h-16 mb-3" alt="Kafka">
+                        <span class="font-medium">Kafka Client</span>
+                        <span class="text-xs text-gray-500 mt-1">Message Queue</span>
+                    </div>
+                    
+                    <div class="tech-icon flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" class="w-16 h-16 mb-3" alt="Docker">
+                        <span class="font-medium">Docker/K8s</span>
+                        <span class="text-xs text-gray-500 mt-1">Deployment</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dependencies Section -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="segment-bg px-6 py-4 border-b segment-border">
+                <h2 class="text-xl font-semibold text-gray-800">Dependencies & Integration</h2>
+            </div>
+            <div class="p-6">
+                <div class="flex flex-wrap gap-3 mb-6">
+                    <span class="dependency-badge bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                        <i class="fas fa-database mr-1"></i> PostgreSQL
+                    </span>
+                    <span class="dependency-badge bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                        <i class="fas fa-exchange-alt mr-1"></i> Kafka Client
+                    </span>
+                    <span class="dependency-badge bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                        <i class="fas fa-server mr-1"></i> Message Bus
+                    </span>
+                    <span class="dependency-badge bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                        <i class="fas fa-code mr-1"></i> FastAPI Services
+                    </span>
+                </div>
+                
+                <div class="border segment-border rounded-lg p-4">
+                    <div class="flex items-center mb-3">
+                        <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                        <span class="font-medium">Integration Status</span>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">Database Connection</span>
+                            <span class="text-sm font-medium text-green-600">Connected</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">Message Bus</span>
+                            <span class="text-sm font-medium text-green-600">Active</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">Downstream Services</span>
+                            <span class="text-sm font-medium text-yellow-600">2/3 Available</span>
+                        </div>
+                    </div>
+                    
+                    <button class="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-sync-alt mr-2"></i> Refresh Connections
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize workflow canvas with sample nodes
+            const workflowCanvas = document.getElementById('workflowCanvas');
+            
+            // Sample task types with different colors
+            const taskTypes = [
+                { name: 'Input', color: 'bg-blue-500' },
+                { name: 'Process', color: 'bg-green-500' },
+                { name: 'Validate', color: 'bg-yellow-500' },
+                { name: 'Output', color: 'bg-purple-500' }
+            ];
+            
+            // Create sample nodes
+            const nodes = [
+                { id: 1, type: 0, x: 20, y: 50, name: 'Data Load' },
+                { id: 2, type: 1, x: 150, y: 30, name: 'Clean Data' },
+                { id: 3, type: 1, x: 150, y: 80, name: 'Validate Schema' },
+                { id: 4, type: 2, x: 280, y: 50, name: 'Quality Check' },
+                { id: 5, type: 3, x: 410, y: 50, name: 'Export Results' }
+            ];
+            
+            // Draw nodes
+            nodes.forEach(node => {
+                const nodeElement = document.createElement('div');
+                nodeElement.className = `absolute task-node rounded-full flex items-center justify-center text-white cursor-pointer ${taskTypes[node.type].color}`;
+                nodeElement.style.left = `${node.x}px`;
+                nodeElement.style.top = `${node.y}px`;
+                nodeElement.title = node.name;
+                nodeElement.dataset.id = node.id;
+                
+                // Add icon based on type
+                const icon = document.createElement('i');
+                if (node.type === 0) icon.className = 'fas fa-download text-xs';
+                else if (node.type === 1) icon.className = 'fas fa-cogs text-xs';
+                else if (node.type === 2) icon.className = 'fas fa-check-circle text-xs';
+                else icon.className = 'fas fa-upload text-xs';
+                
+                nodeElement.appendChild(icon);
+                workflowCanvas.appendChild(nodeElement);
+                
+                // Add node name label
+                const label = document.createElement('div');
+                label.className = 'absolute text-xs font-medium text-gray-700 whitespace-nowrap';
+                label.style.left = `${node.x + 30}px`;
+                label.style.top = `${node.y + 6}px`;
+                label.textContent = node.name;
+                workflowCanvas.appendChild(label);
+            });
+            
+            // Draw connectors (simplified for demo)
+            const connectors = [
+                { from: 1, to: 2 },
+                { from: 1, to: 3 },
+                { from: 2, to: 4 },
+                { from: 3, to: 4 },
+                { from: 4, to: 5 }
+            ];
+            
+            connectors.forEach(conn => {
+                const fromNode = nodes.find(n => n.id === conn.from);
+                const toNode = nodes.find(n => n.id === conn.to);
+                
+                if (fromNode && toNode) {
+                    const line = document.createElement('div');
+                    line.className = 'connector-line';
+                    
+                    // Calculate position and length (simplified)
+                    const startX = fromNode.x + 24;
+                    const startY = fromNode.y + 12;
+                    const endX = toNode.x;
+                    const endY = toNode.y + 12;
+                    
+                    const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                    const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+                    
+                    line.style.width = `${length}px`;
+                    line.style.left = `${startX}px`;
+                    line.style.top = `${startY}px`;
+                    line.style.transform = `rotate(${angle}deg)`;
+                    line.style.transformOrigin = '0 0';
+                    
+                    workflowCanvas.insertBefore(line, workflowCanvas.firstChild);
+                }
+            });
+            
+            // Add hover effect to tech stack icons
+            document.querySelectorAll('.tech-icon').forEach(icon => {
+                icon.addEventListener('mouseenter', function() {
+                    this.querySelector('img').classList.add('animate-pulse');
+                });
+                
+                icon.addEventListener('mouseleave', function() {
+                    this.querySelector('img').classList.remove('animate-pulse');
+                });
+            });
+            
+            // Simulate progress bar animation
+            const progressBar = document.querySelector('.progress-bar');
+            let progress = 65;
+            setInterval(() => {
+                progress = progress + (Math.random() * 2 - 1);
+                progress = Math.max(65, Math.min(progress, 85));
+                progressBar.style.width = `${progress}%`;
+                document.querySelector('.progress-bar + div span:last-child').textContent = `${Math.round(progress)}%`;
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

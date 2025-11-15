@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Gateway Module Backend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .method-get { color: #10B981; }
+        .method-post { color: #3B82F6; }
+        .method-put { color: #F59E0B; }
+        .method-delete { color: #EF4444; }
+        pre {
+            background-color: #1E293B;
+            color: #F8FAFC;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        .endpoint-card {
+            border-left: 4px solid #dae8fc;
+            transition: all 0.2s ease;
+            background-color: #fafafa;
+        }
+        .endpoint-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .header-bg {
+            background-color: #dae8fc;
+        }
+        .react-badge {
+            background-color: #61DAFB;
+            color: #000;
+        }
+        .node-badge {
+            background-color: #68A063;
+            color: white;
+        }
+        .oauth-badge {
+            background-color: #EB5424;
+            color: white;
+        }
+        .kubernetes-badge {
+            background-color: #326CE5;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="mb-12 text-center">
+            <div class="header-bg rounded-lg p-6 shadow-inner">
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Module 1: User Gateway Backend</h1>
+                <p class="text-xl text-gray-700">Handles user interactions and routes authenticated API requests</p>
+                <div class="mt-4 flex justify-center gap-4">
+                    <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">AI Buildability: 5/5</span>
+                    <span class="react-badge text-sm font-medium px-3 py-1 rounded-full">React</span>
+                    <span class="node-badge text-sm font-medium px-3 py-1 rounded-full">Node.js</span>
+                    <span class="oauth-badge text-sm font-medium px-3 py-1 rounded-full">OAuth2</span>
+                    <span class="kubernetes-badge text-sm font-medium px-3 py-1 rounded-full">Kubernetes</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🚀 Quick Start</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <ol class="list-decimal pl-5 space-y-3">
+                    <li>Install Node.js 18+ and npm</li>
+                    <li>Clone the repository: <code class="bg-gray-100 px-2 py-1 rounded">git clone https://github.com/yourrepo/user-gateway.git</code></li>
+                    <li>Install dependencies: <code class="bg-gray-100 px-2 py-1 rounded">npm install</code></li>
+                    <li>Create a <code class="bg-gray-100 px-2 py-1 rounded">.env</code> file:
+                        <pre class="mt-3">PORT=3000
+NODE_ENV=development
+OAUTH_CLIENT_ID=your-client-id
+OAUTH_CLIENT_SECRET=your-client-secret
+OAUTH_CALLBACK_URL=http://localhost:3000/auth/callback
+SESSION_SECRET=your-session-secret
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+JWT_SECRET=your-jwt-secret
+JWT_EXPIRES_IN=1h
+DATABASE_URL=postgresql://user:password@localhost:5432/gateway_db</pre>
+                    </li>
+                    <li>Run database migrations: <code class="bg-gray-100 px-2 py-1 rounded">npm run migrate</code></li>
+                    <li>Start the server: <code class="bg-gray-100 px-2 py-1 rounded">npm run dev</code></li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">📦 Project Structure</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <pre>user-gateway/
+├── client/                     # React frontend
+│   ├── public/
+│   ├── src/
+│   │   ├── components/        # Reusable UI components
+│   │   ├── pages/             # Page components
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── contexts/          # React contexts
+│   │   ├── utils/             # Utility functions
+│   │   ├── App.js             # Main app component
+│   │   └── index.js           # Entry point
+├── server/                    # Node.js backend
+│   ├── config/                # Configuration files
+│   ├── controllers/           # Route controllers
+│   ├── middlewares/           # Express middlewares
+│   ├── models/                # Database models
+│   ├── routes/                # API routes
+│   ├── services/              # Business logic
+│   ├── utils/                 # Utility functions
+│   ├── app.js                 # Express app setup
+│   └── server.js              # Server entry point
+├── migrations/                # Database migrations
+├── .env                       # Environment variables
+├── package.json               # Project dependencies
+├── Dockerfile                 # Container configuration
+└── docker-compose.yml         # Local development</pre>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🗄️ Database Schema</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- User Model -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">server/models/User.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+
+const User = sequelize.define('User', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        validate: {
+            isEmail: true
+        }
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: true // For OAuth users
+    },
+    firstName: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    lastName: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    provider: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'local'
+    },
+    providerId: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    isVerified: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    isActive: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true
+    },
+    lastLogin: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
+    role: {
+        type: DataTypes.ENUM('user', 'admin', 'editor'),
+        defaultValue: 'user'
+    }
+}, {
+    timestamps: true,
+    paranoid: true // Soft delete
+});
+
+module.exports = User;</pre>
+                    </div>
+                </div>
+
+                <!-- Session and Token Models -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">server/models/Session.js & Token.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>// Session model
+const Session = sequelize.define('Session', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    userId: {
+        type: DataTypes.UUID,
+        allowNull: false
+    },
+    token: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    ipAddress: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    userAgent: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    expiresAt: {
+        type: DataTypes.DATE,
+        allowNull: false
+    }
+});
+
+// Token model (for email verification, password reset)
+const Token = sequelize.define('Token', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    userId: {
+        type: DataTypes.UUID,
+        allowNull: false
+    },
+    token: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    type: {
+        type: DataTypes.ENUM(
+            'emailVerification',
+            'passwordReset',
+            'apiKey'
+        ),
+        allowNull: false
+    },
+    expiresAt: {
+        type: DataTypes.DATE,
+        allowNull: false
+    },
+    usedAt: {
+        type: DataTypes.DATE,
+        allowNull: true
+    }
+});
+
+// Associations
+User.hasMany(Session);
+User.hasMany(Token);</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🔒 Authentication Flow</h2>
+
+            <div class="bg-white shadow rounded-lg p-6">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <div class="flex-1">
+                        <h3 class="text-xl font-semibold mb-4">Local Authentication</h3>
+                        <ol class="list-decimal pl-5 space-y-3">
+                            <li>User submits email/password</li>
+                            <li>Server validates credentials</li>
+                            <li>If valid, creates JWT and session</li>
+                            <li>Returns token to client</li>
+                            <li>Client stores token and uses for subsequent requests</li>
+                        </ol>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-xl font-semibold mb-4">OAuth2 Flow</h3>
+                        <ol class="list-decimal pl-5 space-y-3">
+                            <li>User clicks "Login with Provider"</li>
+                            <li>Client redirects to OAuth provider</li>
+                            <li>User authenticates with provider</li>
+                            <li>Provider redirects back with code</li>
+                            <li>Server exchanges code for tokens</li>
+                            <li>Creates or updates user in DB</li>
+                            <li>Returns JWT to client</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">⚙️ Core Services</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Auth Service -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">server/services/auth.service.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { User, Session } = require('../models');
+const { kafkaProducer } = require('../utils/kafka');
+const config = require('../config');
+
+class AuthService {
+    static async register({ email, password, firstName, lastName }) {
+        // Check if user exists
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            throw new Error('Email already in use');
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create user
+        const user = await User.create({
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName,
+            provider: 'local'
+        });
+
+        // Publish user registered event
+        await kafkaProducer.send({
+            topic: 'user-events',
+            messages: [{
+                value: JSON.stringify({
+                    eventType: 'user.registered',
+                    userId: user.id,
+                    email: user.email,
+                    timestamp: new Date()
+                })
+            }]
+        });
+
+        return user;
+    }
+
+    static async login({ email, password, ipAddress, userAgent }) {
+        // Find user
+        const user = await User.findOne({ where: { email } });
+        if (!user) {
+            throw new Error('Invalid credentials');
+        }
+
+        // Check password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            throw new Error('Invalid credentials');
+
+</html>

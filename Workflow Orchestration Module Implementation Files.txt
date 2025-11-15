@@ -1,0 +1,576 @@
+```
+# Workflow Orchestration Module Implementation Files
+# Directory: workflow-orchestration/
+
+## File: app/main.py
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import jwt, JWTError
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from app.database import SessionLocal, engine
+from app.models import Base
+from app.api.v1 import workflows
+
+app = FastAPI(title="Workflow Orchestration Module")
+security = HTTPBearer()
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
+
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Basic JWT authentication
+class User(BaseModel):
+    email: str
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, "your-jwt-secret", algorithms=["HS256"])
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return User(email=email)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+# Include API routers
+app.include_router(workflows.router, prefix="/api/v1", dependencies=[Depends(get_current_user)])
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
+## File: app/database.py
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/workflow_db"
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+## File: app/models/workflow.py
+from datetime import datetime
+from enum import Enum
+from sqlalchemy import Column, String, Integer, JSON, DateTime, Boolean
+from sqlalchemy.orm import relationship
+from app.database import Base
+
+class WorkflowStatus(str, Enum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+    PAUSED = "paused"
+
+class Workflow(Base):
+    __tablename__ = "workflows"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(String(1000), nullable=True)
+    status = Column(String(20), default=WorkflowStatus.DRAFT.value)
+    version = Column(Integer, default=1)
+    definition = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(String(255), nullable=False)
+    is_template = Column(Boolean, default=False)
+    timeout_seconds = Column(Integer, default=3600)
+    tasks = relationship("Task", back_populates="workflow")
+    executions = relationship("WorkflowExecution", back_populates="workflow")
+
+class WorkflowExecution(Base):
+    __tablename__ = "workflow_executions"
+    id = Column(Integer, primary_key=True, index=True)
+    workflow_id = Column(Integer, ForeignKey("workflows.id"))
+    status = Column(String(20), default="pending")
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    triggered_by = Column(String(255), nullable=False)
+    input_data = Column(JSON, nullable=True)
+    output_data = Column(JSON, nullable=True)
+    error_message = Column(String(1000), nullable=True)
+    execution_time_ms = Column(Integer, nullable=True)
+    workflow = relationship("Workflow", back_populates="executions")
+    task_executions = relationship("TaskExecution", back_populates="workflow_execution")
+
+## File: app/models/task.py
+from datetime import datetime
+from enum import Enum
+from sqlalchemy import Column, String, Integer, JSON, DateTime, ForeignKey, Boolean
+from sqlalchemy.orm import relationship
+from app.database import Base
+
+class TaskType(str, Enum):
+    CODE_GENERATION = "code_generation"
+    DATA_PROCESSING = "data_processing"
+    API_CALL = "api_call"
+    CONDITIONAL = "conditional"
+    PARALLEL = "parallel"
+    MANUAL_APPROVAL = "manual_approval"
+
+class TaskStatus(str, Enum):
+    PENDING = "pending"
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    TIMEOUT = "timeout"
+    CANCELLED = "cancelled"
+
+class Task(Base):
+    __tablename__ = "tasks"
+    id = Column(Integer, primary_key=True, index=True)
+    workflow_id = Column(Integer, ForeignKey("workflows.id"))
+    name = Column(String(255), nullable=False)
+    description = Column(String(1000), nullable=True)
+    task_type = Column(String(50), nullable=False)
+    position_x = Column(Integer, default=0)
+    position_y = Column(Integer, default=0)
+    config = Column(JSON, nullable=False)
+    depends_on = Column(JSON, nullable=True)
+    retry_policy = Column(JSON, nullable=True)
+    timeout_seconds = Column(Integer, default=300)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    workflow = relationship("Workflow", back_populates="tasks")
+    executions = relationship("TaskExecution", back_populates="task")
+
+class TaskExecution(Base):
+    __tablename__ = "task_executions"
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"))
+    workflow_execution_id = Column(Integer, ForeignKey("workflow_executions.id"))
+    status = Column(String(20), default=TaskStatus.PENDING.value)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    input_data = Column(JSON, nullable=True)
+    output_data = Column(JSON, nullable=True)
+    error_message = Column(String(1000), nullable=True)
+    execution_time_ms = Column(Integer, nullable=True)
+    retry_count = Column(Integer, default=0)
+    logs = Column(JSON, nullable=True)
+    task = relationship("Task", back_populates="executions")
+    workflow_execution = relationship("WorkflowExecution", back_populates="task_executions")
+
+## File: app/services/workflow_service.py
+from typing import Dict, Optional
+from datetime import datetime
+import logging
+from sqlalchemy.orm import Session
+from app.models.workflow import Workflow, WorkflowStatus, WorkflowExecution
+from app.models.task import Task
+from app.events.schemas import WorkflowEvent
+from aiokafka import AIOKafkaProducer
+
+class WorkflowService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.kafka_producer = AIOKafkaProducer(bootstrap_servers="kafka:9092")
+
+    async def create_workflow(
+        self,
+        name: str,
+        definition: Dict,
+        created_by: str,
+        description: Optional[str] = None,
+        is_template: bool = False
+    ) -> Workflow:
+        try:
+            workflow = Workflow(
+                name=name,
+                description=description,
+                definition=definition,
+                status=WorkflowStatus.DRAFT.value,
+                created_by=created_by,
+                is_template=is_template
+            )
+            self.db.add(workflow)
+            self.db.commit()
+            self._create_tasks_from_definition(workflow.id, definition)
+            return workflow
+        except Exception as e:
+            self.db.rollback()
+            logging.error(f"Failed to create workflow: {e}")
+            raise
+
+    def _create_tasks_from_definition(self, workflow_id: int, definition: Dict):
+        tasks = definition.get("tasks", [])
+        for task_def in tasks:
+            task = Task(
+                workflow_id=workflow_id,
+                name=task_def["name"],
+                task_type=task_def["type"],
+                config=task_def.get("config", {}),
+                depends_on=task_def.get("depends_on", []),
+                retry_policy=task_def.get("retry_policy", {
+                    "max_retries": 3,
+                    "backoff_factor": 1.5
+                }),
+                timeout_seconds=task_def.get("timeout_seconds", 300)
+            )
+            self.db.add(task)
+        self.db.commit()
+
+    async def start_workflow_execution(
+        self,
+        workflow_id: int,
+        triggered_by: str,
+        input_data: Optional[Dict] = None
+    ) -> WorkflowExecution:
+        try:
+            execution = WorkflowExecution(
+                workflow_id=workflow_id,
+                status="pending",
+                triggered_by=triggered_by,
+                input_data=input_data,
+                started_at=datetime.utcnow()
+            )
+            self.db.add(execution)
+            self.db.commit()
+            initial_tasks = self.db.query(Task).filter(
+                Task.workflow_id == workflow_id,
+                Task.depends_on == None
+            ).all()
+            for task in initial_tasks:
+                task_execution = TaskExecution(
+                    task_id=task.id,
+                    workflow_execution_id=execution.id,
+                    status="pending"
+                )
+                self.db.add(task_execution)
+            self.db.commit()
+            await self.kafka_producer.start()
+            event = WorkflowEvent(
+                event_type="workflow.started",
+                workflow_id=workflow_id,
+                execution_id=execution.id,
+                triggered_by=triggered_by
+            )
+            await self.kafka_producer.send_and_wait("workflow-events", event.json())
+            return execution
+        except Exception as e:
+            self.db.rollback()
+            logging.error(f"Failed to start workflow execution: {e}")
+            raise
+        finally:
+            await self.kafka_producer.stop()
+
+## File: app/services/orchestrator.py
+from typing import Dict, List, Optional
+import logging
+from datetime import datetime
+from sqlalchemy.orm import Session
+from app.models.task import TaskExecution, TaskStatus, Task
+from app.models.workflow import WorkflowExecution
+from app.events.schemas import TaskEvent
+from aiokafka import AIOKafkaProducer
+
+class WorkflowOrchestrator:
+    def __init__(self, db: Session):
+        self.db = db
+        self.kafka_producer = AIOKafkaProducer(bootstrap_servers="kafka:9092")
+
+    async def execute_task(self, task_execution_id: int):
+        try:
+            task_execution = self.db.query(TaskExecution).get(task_execution_id)
+            if not task_execution:
+                raise ValueError(f"Task execution {task_execution_id} not found")
+            task_execution.status = TaskStatus.RUNNING.value
+            task_execution.started_at = datetime.utcnow()
+            self.db.commit()
+            task = task_execution.task
+            result = self.dispatch_task(
+                task.task_type,
+                task.config,
+                task_execution.input_data
+            )
+            task_execution.status = TaskStatus.COMPLETED.value
+            task_execution.completed_at = datetime.utcnow()
+            task_execution.output_data = result.get("output")
+            task_execution.execution_time_ms = int(
+                (task_execution.completed_at - task_execution.started_at).total_seconds() * 1000
+            )
+            self.db.commit()
+            await self.kafka_producer.start()
+            event = TaskEvent(
+                event_type="task.completed",
+                task_id=task.id,
+                execution_id=task_execution.id,
+                workflow_execution_id=task_execution.workflow_execution_id,
+                status=TaskStatus.COMPLETED.value
+            )
+            await self.kafka_producer.send_and_wait("task-events", event.json())
+            self._trigger_dependent_tasks(
+                task_execution.workflow_execution_id,
+                task.id
+            )
+            return task_execution
+        except Exception as e:
+            logging.error(f"Task execution failed: {e}")
+            self._handle_task_failure(task_execution_id, str(e))
+            raise
+        finally:
+            await self.kafka_producer.stop()
+
+    def dispatch_task(self, task_type: str, config: Dict, input_data: Optional[Dict]) -> Dict:
+        # Placeholder for task dispatching logic
+        return {"output": f"Processed {task_type} with config {config}"}
+
+    def _trigger_dependent_tasks(self, workflow_execution_id: int, completed_task_id: int):
+        try:
+            dependent_tasks = self.db.query(Task).filter(
+                Task.depends_on.contains([completed_task_id])
+            ).all()
+            for task in dependent_tasks:
+                if self._check_dependencies_completed(workflow_execution_id, task.depends_on):
+                    existing_exec = self.db.query(TaskExecution).filter(
+                        TaskExecution.task_id == task.id,
+                        TaskExecution.workflow_execution_id == workflow_execution_id
+                    ).first()
+                    if not existing_exec:
+                        task_execution = TaskExecution(
+                            task_id=task.id,
+                            workflow_execution_id=workflow_execution_id,
+                            status=TaskStatus.PENDING.value
+                        )
+                        self.db.add(task_execution)
+                        self.db.commit()
+        except Exception as e:
+            logging.error(f"Failed to trigger dependent tasks: {e}")
+            raise
+
+    def _check_dependencies_completed(self, workflow_execution_id: int, dependencies: List[int]) -> bool:
+        if not dependencies:
+            return True
+        completed_count = self.db.query(TaskExecution).filter(
+            TaskExecution.workflow_execution_id == workflow_execution_id,
+            TaskExecution.task_id.in_(dependencies),
+            TaskExecution.status == TaskStatus.COMPLETED.value
+        ).count()
+        return completed_count == len(dependencies)
+
+    def _handle_task_failure(self, task_execution_id: int, error: str):
+        try:
+            task_execution = self.db.query(TaskExecution).get(task_execution_id)
+            if not task_execution:
+                return
+            task = task_execution.task
+            retry_policy = task.retry_policy or {}
+            max_retries = retry_policy.get("max_retries", 0)
+            if task_execution.retry_count < max_retries:
+                task_execution.retry_count += 1
+                task_execution.status = TaskStatus.PENDING.value
+                task_execution.error_message = error
+                self.db.commit()
+                event = TaskEvent(
+                    event_type="task.retry",
+                    task_id=task.id,
+                    execution_id=task_execution.id,
+                    retry_count=task_execution.retry_count,
+                    max_retries=max_retries
+                )
+                async def send_retry_event():
+                    await self.kafka_producer.start()
+                    await self.kafka_producer.send_and_wait("task-events", event.json())
+                    await self.kafka_producer.stop()
+                import asyncio
+                asyncio.run(send_retry_event())
+            else:
+                task_execution.status = TaskStatus.FAILED.value
+                task_execution.completed_at = datetime.utcnow()
+                task_execution.error_message = error
+                self.db.commit()
+                event = TaskEvent(
+                    event_type="task.failed",
+                    task_id=task.id,
+                    execution_id=task_execution.id,
+                    error=error
+                )
+                async def send_failed_event():
+                    await self.kafka_producer.start()
+                    await self.kafka_producer.send_and_wait("task-events", event.json())
+                    await self.kafka_producer.stop()
+                asyncio.run(send_failed_event())
+                workflow_execution = task_execution.workflow_execution
+                workflow_execution.status = "failed"
+                workflow_execution.error_message = f"Task {task.name} failed: {error}"
+                self.db.commit()
+        except Exception as e:
+            logging.error(f"Failed to handle task failure: {e}")
+            self.db.rollback()
+            raise
+
+## File: app/api/v1/workflows.py
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import Dict, Optional
+from app.services.workflow_service import WorkflowService
+from app.database import get_db
+from app.main import get_current_user, User
+
+router = APIRouter()
+
+@router.post("/workflows")
+async def create_workflow(
+    name: str,
+    definition: Dict,
+    created_by: str,
+    description: Optional[str] = None,
+    is_template: bool = False,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    service = WorkflowService(db)
+    workflow = await service.create_workflow(name, definition, created_by, description, is_template)
+    return workflow
+
+@router.post("/workflows/{workflow_id}/execute")
+async def execute_workflow(
+    workflow_id: int,
+    triggered_by: str,
+    input_data: Optional[Dict] = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    service = WorkflowService(db)
+    execution = await service.start_workflow_execution(workflow_id, triggered_by, input_data)
+    return execution
+
+@router.get("/workflows/{workflow_id}")
+async def get_workflow(
+    workflow_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    workflow = db.query(Workflow).get(workflow_id)
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    return workflow
+
+## File: app/events/schemas.py
+from datetime import datetime
+from enum import Enum
+from typing import Optional, Dict, Any, List
+from pydantic import BaseModel
+
+class EventType(str, Enum):
+    WORKFLOW_STARTED = "workflow.started"
+    WORKFLOW_COMPLETED = "workflow.completed"
+    WORKFLOW_FAILED = "workflow.failed"
+    TASK_QUEUED = "task.queued"
+    TASK_STARTED = "task.started"
+    TASK_COMPLETED = "task.completed"
+    TASK_FAILED = "task.failed"
+    TASK_RETRY = "task.retry"
+
+class BaseEvent(BaseModel):
+    event_type: EventType
+    timestamp: datetime = datetime.utcnow()
+    source: str = "workflow-orchestrator"
+
+class WorkflowEvent(BaseEvent):
+    workflow_id: int
+    execution_id: int
+    triggered_by: Optional[str] = None
+    status: Optional[str] = None
+    execution_time_ms: Optional[int] = None
+
+class TaskEvent(BaseEvent):
+    task_id: int
+    execution_id: int
+    workflow_execution_id: int
+    status: Optional[str] = None
+    retry_count: Optional[int] = None
+    max_retries: Optional[int] = None
+    error: Optional[str] = None
+    execution_time_ms: Optional[int] = None
+
+class TaskDispatchEvent(BaseModel):
+    task_id: int
+    execution_id: int
+    workflow_execution_id: int
+    task_type: str
+    config: Dict[str, Any]
+    input_data: Optional[Dict[str, Any]] = None
+    priority: int = 0
+    timeout_seconds: int = 300
+
+## File: requirements.txt
+fastapi==0.95.0
+uvicorn==0.20.0
+sqlalchemy==1.4.46
+psycopg2-binary==2.9.5
+aiokafka==0.8.0
+pydantic==1.10.5
+python-jose==3.3.0
+alembic==1.9.4
+
+## File: Dockerfile
+FROM python:3.9-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+## File: docker-compose.yml
+version: '3.8'
+services:
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/workflow_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - WORKFLOW_MAX_RETRIES=3
+      - TASK_TIMEOUT_SECONDS=300
+    depends_on:
+      - db
+      - kafka
+  db:
+    image: postgres:14
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=workflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  kafka:
+    image: bitnami/kafka:3.1
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka_data:/bitnami
+volumes:
+  postgres_data:
+  kafka_data:
+```

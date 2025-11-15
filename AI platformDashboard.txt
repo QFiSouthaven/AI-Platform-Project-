@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Platform Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        model: '#cce5ff',
+                        infra: '#ffd9b3',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #cce5ff 0%, #ffd9b3 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+        .tech-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="gradient-bg py-6 shadow-md">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-3xl font-bold text-gray-800">
+                        <i class="fas fa-robot mr-2"></i> AI Platform Dashboard
+                    </h1>
+                    <div class="flex items-center space-x-4">
+                        <span class="bg-white bg-opacity-80 px-3 py-1 rounded-full text-sm font-medium">
+                            <i class="fas fa-circle text-green-500 mr-1"></i> Operational
+                        </span>
+                        <button class="bg-white bg-opacity-90 hover:bg-opacity-100 px-4 py-2 rounded-lg shadow transition-all">
+                            <i class="fas fa-cog mr-2"></i>Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Module 5: Model Management -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-all card-hover">
+                    <div class="bg-model px-6 py-4">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold text-gray-800">
+                                <i class="fas fa-database mr-2"></i> Model Management
+                            </h2>
+                            <span class="bg-white bg-opacity-80 px-3 py-1 rounded-full text-sm font-medium">
+                                Buildability: 4/5
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <p class="text-gray-600 mb-6">
+                            Stores, loads, and extends AI models, supporting dynamic model loading and plugin integrations.
+                        </p>
+                        
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-3 flex items-center">
+                                <i class="fas fa-plug mr-2"></i> Dependencies
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="bg-gray-50 p-3 rounded-lg flex items-center">
+                                    <div class="tech-icon bg-blue-100 text-blue-600">
+                                        <i class="fas fa-server"></i>
+                                    </div>
+                                    <span>MongoDB</span>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-lg flex items-center">
+                                    <div class="tech-icon bg-yellow-100 text-yellow-600">
+                                        <i class="fas fa-lock"></i>
+                                    </div>
+                                    <span>Python Cryptography</span>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-lg flex items-center">
+                                    <div class="tech-icon bg-green-100 text-green-600">
+                                        <i class="fas fa-bolt"></i>
+                                    </div>
+                                    <span>FastAPI</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-3 flex items-center">
+                                <i class="fas fa-layer-group mr-2"></i> Technology Stack
+                            </h3>
+                            <div class="space-y-2">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                                    <span>Backend: Python/FastAPI</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                                    <span>Database: MongoDB</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+                                    <span>Encryption: Python cryptography</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+                                    <span>Deployment: Docker, Kubernetes</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button class="flex-1 bg-model hover:bg-blue-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-all">
+                                <i class="fas fa-upload mr-2"></i> Upload Model
+                            </button>
+                            <button class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-all">
+                                <i class="fas fa-plug mr-2"></i> Manage Plugins
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Module 6: Infrastructure -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-all card-hover">
+                    <div class="bg-infra px-6 py-4">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold text-gray-800">
+                                <i class="fas fa-server mr-2"></i> Infrastructure
+                            </h2>
+                            <span class="bg-white bg-opacity-80 px-3 py-1 rounded-full text-sm font-medium">
+                                Buildability: 4/5
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <p class="text-gray-600 mb-6">
+                            Executes tasks in parallel and balances workloads across processing units for scalability.
+                        </p>
+                        
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-3 flex items-center">
+                                <i class="fas fa-plug mr-2"></i> Dependencies
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="bg-gray-50 p-3 rounded-lg flex items-center">
+                                    <div class="tech-icon bg-blue-100 text-blue-600">
+                                        <i class="fas fa-project-diagram"></i>
+                                    </div>
+                                    <span>Ray</span>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-lg flex items-center">
+                                    <div class="tech-icon bg-green-100 text-green-600">
+                                        <i class="fas fa-balance-scale"></i>
+                                    </div>
+                                    <span>NGINX</span>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-lg flex items-center">
+                                    <div class="tech-icon bg-purple-100 text-purple-600">
+                                        <i class="fas fa-stream"></i>
+                                    </div>
+                                    <span>Kafka Client</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-3 flex items-center">
+                                <i class="fas fa-layer-group mr-2"></i> Technology Stack
+                            </h3>
+                            <div class="space-y-2">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                                    <span>Parallel Processing: Ray</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                                    <span>Load Balancing: NGINX</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+                                    <span>Message Queue: Kafka client</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+                                    <span>Deployment: Docker, Kubernetes</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button class="flex-1 bg-infra hover:bg-orange-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-all">
+                                <i class="fas fa-tasks mr-2"></i> View Tasks
+                            </button>
+                            <button class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-all">
+                                <i class="fas fa-chart-line mr-2"></i> Performance
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Overview Section -->
+            <div class="mt-12 bg-white rounded-xl shadow-lg overflow-hidden p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-chart-pie mr-2"></i> System Status Overview
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="border-l-4 border-blue-500 pl-4 py-2">
+                        <h3 class="text-gray-600 font-medium">Model Storage</h3>
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl font-bold">24</span>
+                            <span class="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">+3 new</span>
+                        </div>
+                    </div>
+                    
+                    <div class="border-l-4 border-green-500 pl-4 py-2">
+                        <h3 class="text-gray-600 font-medium">Active Workers</h3>
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl font-bold">8</span>
+                            <span class="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">Optimal</span>
+                        </div>
+                    </div>
+                    
+                    <div class="border-l-4 border-purple-500 pl-4 py-2">
+                        <h3 class="text-gray-600 font-medium">Queue Length</h3>
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl font-bold">12</span>
+                            <span class="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded-full">Processing</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-700">Recent Activity</h3>
+                        <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            View All
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="bg-model p-2 rounded-lg mr-3">
+                                <i class="fas fa-database text-blue-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium">New model "text-classifier-v3" uploaded</p>
+                                <p class="text-sm text-gray-500">2 minutes ago</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="bg-infra p-2 rounded-lg mr-3">
+                                <i class="fas fa-server text-orange-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium">Scaled worker pool to 8 instances</p>
+                                <p class="text-sm text-gray-500">15 minutes ago</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="bg-model p-2 rounded-lg mr-3">
+                                <i class="fas fa-plug text-blue-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium">Plugin "image-preprocessor" updated</p>
+                                <p class="text-sm text-gray-500">1 hour ago</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="bg-gray-100 py-6 mt-12">
+            <div class="container mx-auto px-4 text-center text-gray-600">
+                <p>AI Platform Dashboard v1.0</p>
+                <p class="mt-2 text-sm">© 2023 AI Solutions Inc. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

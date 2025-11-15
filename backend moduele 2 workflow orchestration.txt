@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Orchestration Module Backend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .method-get { color: #10B981; }
+        .method-post { color: #3B82F6; }
+        .method-put { color: #F59E0B; }
+        .method-delete { color: #EF4444; }
+        pre {
+            background-color: #1E293B;
+            color: #F8FAFC;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        .endpoint-card {
+            border-left: 4px solid #d5e8d4;
+            transition: all 0.2s ease;
+            background-color: #fafafa;
+        }
+        .endpoint-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .header-bg {
+            background-color: #d5e8d4;
+        }
+        .postgres-badge {
+            background-color: #336791;
+            color: white;
+        }
+        .kafka-badge {
+            background-color: #000000;
+            color: white;
+        }
+        .kubernetes-badge {
+            background-color: #326CE5;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="mb-12 text-center">
+            <div class="header-bg rounded-lg p-6 shadow-inner">
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Module 2: Workflow Orchestration Backend</h1>
+                <p class="text-xl text-gray-700">Analyzes requirements, orchestrates workflows, and schedules tasks for execution</p>
+                <div class="mt-4 flex justify-center gap-4">
+                    <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">AI Buildability: 4/5</span>
+                    <span class="postgres-badge text-sm font-medium px-3 py-1 rounded-full">PostgreSQL</span>
+                    <span class="kafka-badge text-sm font-medium px-3 py-1 rounded-full">Kafka</span>
+                    <span class="kubernetes-badge text-sm font-medium px-3 py-1 rounded-full">Kubernetes</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🚀 Quick Start</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <ol class="list-decimal pl-5 space-y-3">
+                    <li>Install Python 3.9+, PostgreSQL 14+, and Kafka</li>
+                    <li>Clone the repository: <code class="bg-gray-100 px-2 py-1 rounded">git clone https://github.com/yourrepo/workflow-orchestration.git</code></li>
+                    <li>Create virtual environment: <code class="bg-gray-100 px-2 py-1 rounded">python -m venv venv</code></li>
+                    <li>Install dependencies: <code class="bg-gray-100 px-2 py-1 rounded">pip install -r requirements.txt</code></li>
+                    <li>Create a <code class="bg-gray-100 px-2 py-1 rounded">.env</code> file:
+                        <pre class="mt-3">DATABASE_URL=postgresql://user:password@localhost:5432/workflow_db
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+WORKFLOW_MAX_RETRIES=3
+TASK_TIMEOUT_SECONDS=300
+SCHEDULER_INTERVAL_SECONDS=30</pre>
+                    </li>
+                    <li>Run database migrations: <code class="bg-gray-100 px-2 py-1 rounded">alembic upgrade head</code></li>
+                    <li>Start the server: <code class="bg-gray-100 px-2 py-1 rounded">uvicorn main:app --reload</code></li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">📦 Project Structure</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <pre>workflow-orchestration/
+├── app/                      # Application core
+│   ├── __init__.py
+│   ├── main.py               # FastAPI app
+│   ├── models/               # Database models
+│   │   ├── __init__.py
+│   │   ├── workflow.py       # Workflow models
+│   │   ├── task.py           # Task models
+│   │   └── execution.py      # Execution history
+│   ├── services/             # Business logic
+│   │   ├── __init__.py
+│   │   ├── workflow_service.py # Workflow management
+│   │   ├── scheduler.py      # Task scheduling
+│   │   ├── analyzer.py       # Requirement analysis
+│   │   └── orchestrator.py   # Workflow execution
+│   ├── api/                  # API endpoints
+│   │   ├── v1/               # API version 1
+│   │   │   ├── workflows.py  # Workflow management
+│   │   │   ├── tasks.py      # Task operations
+│   │   │   └── executions.py # Execution history
+│   ├── events/               # Event handlers
+│   │   ├── consumers.py      # Kafka consumers
+│   │   └── producers.py      # Kafka producers
+│   └── migrations/           # Database migrations
+│       ├── versions/
+│       └── alembic.ini
+├── tests/                    # Tests
+├── requirements.txt          # Python dependencies
+├── Dockerfile                # Container configuration
+└── docker-compose.yml        # Local development</pre>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🗄️ Database Schema</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Workflow Model -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">app/models/workflow.py</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>from datetime import datetime
+from enum import Enum
+from typing import List, Optional
+from sqlalchemy import Column, String, Integer, JSON, DateTime, ForeignKey, Boolean
+from sqlalchemy.orm import relationship
+from app.models.base import Base
+
+class WorkflowStatus(str, Enum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+    PAUSED = "paused"
+
+class Workflow(Base):
+    __tablename__ = "workflows"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(String(1000), nullable=True)
+    status = Column(String(20), default=WorkflowStatus.DRAFT.value)
+    version = Column(Integer, default=1)
+    definition = Column(JSON, nullable=False)  # Workflow DSL definition
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(String(255), nullable=False)
+    is_template = Column(Boolean, default=False)
+    timeout_seconds = Column(Integer, default=3600)  # Max execution time
+
+    tasks = relationship("Task", back_populates="workflow")
+    executions = relationship("WorkflowExecution", back_populates="workflow")
+
+class WorkflowExecution(Base):
+    __tablename__ = "workflow_executions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    workflow_id = Column(Integer, ForeignKey("workflows.id"))
+    status = Column(String(20), default="pending")
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    triggered_by = Column(String(255), nullable=False)
+    input_data = Column(JSON, nullable=True)
+    output_data = Column(JSON, nullable=True)
+    error_message = Column(String(1000), nullable=True)
+    execution_time_ms = Column(Integer, nullable=True)
+
+    workflow = relationship("Workflow", back_populates="executions")
+    task_executions = relationship("TaskExecution", back_populates="workflow_execution")</pre>
+                    </div>
+                </div>
+
+                <!-- Task Model -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">app/models/task.py</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>from datetime import datetime
+from enum import Enum
+from sqlalchemy import Column, String, Integer, JSON, DateTime, ForeignKey, Boolean
+from sqlalchemy.orm import relationship
+from app.models.base import Base
+
+class TaskType(str, Enum):
+    CODE_GENERATION = "code_generation"
+    DATA_PROCESSING = "data_processing"
+    API_CALL = "api_call"
+    CONDITIONAL = "conditional"
+    PARALLEL = "parallel"
+    MANUAL_APPROVAL = "manual_approval"
+
+class TaskStatus(str, Enum):
+    PENDING = "pending"
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    TIMEOUT = "timeout"
+    CANCELLED = "cancelled"
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    workflow_id = Column(Integer, ForeignKey("workflows.id"))
+    name = Column(String(255), nullable=False)
+    description = Column(String(1000), nullable=True)
+    task_type = Column(String(50), nullable=False)
+    position_x = Column(Integer, default=0)  # For UI layout
+    position_y = Column(Integer, default=0)  # For UI layout
+    config = Column(JSON, nullable=False)    # Task-specific configuration
+    depends_on = Column(JSON, nullable=True)  # List of task IDs this task depends on
+    retry_policy = Column(JSON, nullable=True) # Max retries, backoff, etc.
+    timeout_seconds = Column(Integer, default=300)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    workflow = relationship("Workflow", back_populates="tasks")
+    executions = relationship("TaskExecution", back_populates="task")
+
+class TaskExecution(Base):
+    __tablename__ = "task_executions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"))
+    workflow_execution_id = Column(Integer, ForeignKey("workflow_executions.id"))
+    status = Column(String(20), default=TaskStatus.PENDING.value)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    input_data = Column(JSON, nullable=True)
+    output_data = Column(JSON, nullable=True)
+    error_message = Column(String(1000), nullable=True)
+    execution_time_ms = Column(Integer, nullable=True)
+    retry_count = Column(Integer, default=0)
+    logs = Column(JSON, nullable=True)  # Array of log entries
+
+    task = relationship("Task", back_populates="executions")
+    workflow_execution = relationship("WorkflowExecution", back_populates="task_executions")</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">⚙️ Core Services</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Workflow Service -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">app/services/workflow_service.py</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>from typing import List, Dict, Optional
+from datetime import datetime
+import logging
+from sqlalchemy.orm import Session
+from app.models.workflow import Workflow, WorkflowStatus, WorkflowExecution
+from app.models.task import Task, TaskExecution, TaskStatus
+from app.events.producers import publish_workflow_event
+
+class WorkflowService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create_workflow(
+        self,
+        name: str,
+        definition: Dict,
+        created_by: str,
+        description: Optional[str] = None,
+        is_template: bool = False
+    ) -> Workflow:
+        """Create a new workflow definition"""
+        try:
+            workflow = Workflow(
+                name=name,
+                description=description,
+                definition=definition,
+                status=WorkflowStatus.DRAFT.value,
+                created_by=created_by,
+                is_template=is_template
+            )
+            self.db.add(workflow)
+            self.db.commit()
+            
+            # Parse definition and create tasks
+            self._create_tasks_from_definition(workflow.id, definition)
+            
+            return workflow
+        except Exception as e:
+            self.db.rollback()
+            logging.error(f"Failed to create workflow: {e}")
+            raise
+
+    def _create_tasks_from_definition(self, workflow_id: int, definition: Dict):
+        """Create task records from workflow definition"""
+        tasks = definition.get("tasks", [])
+        for task_def in tasks:
+            task = Task(
+                workflow_id=workflow_id,
+                name=task_def["name"],
+                task_type=task_def["type"],
+                config=task_def.get("config", {}),
+                depends_on=task_def.get("depends_on", []),
+                retry_policy=task_def.get("retry_policy", {
+                    "max_retries": 3,
+                    "backoff_factor": 1.5
+                }),
+                timeout_seconds=task_def.get("timeout_seconds", 300)
+            )
+            self.db.add(task)
+        self.db.commit()
+
+    def start_workflow_execution(
+        self,
+        workflow_id: int,
+        triggered_by: str,
+        input_data: Optional[Dict] = None
+    ) -> WorkflowExecution:
+        """Start a new workflow execution"""
+        try:
+            execution = WorkflowExecution(
+                workflow_id=workflow_id,
+                status="pending",
+                triggered_by=triggered_by,
+                input_data=input_data,
+                started_at=datetime.utcnow()
+            )
+            self.db.add(execution)
+            self.db.commit()
+            
+            # Get all initial tasks (with no dependencies)
+            initial_tasks = self.db.query(Task).filter(
+                Task.workflow_id == workflow_id,
+                Task.depends_on == None
+            ).all()
+            
+            # Create task executions for initial tasks
+            for task in initial_tasks:
+                task_execution = TaskExecution(
+                    task_id=task.id,
+                    workflow_execution_id=execution.id,
+                    status="pending"
+                )
+                self.db.add(task_execution)
+            
+            self.db.commit()
+            
+            # Publish workflow started event
+            publish_workflow_event("workflow.started", {
+                "workflow_id": workflow_id,
+                "execution_id": execution.id,
+                "triggered_by": triggered_by
+            })
+            
+            return execution
+        except Exception as e:
+            self.db.rollback()
+            logging.error(f"Failed to start workflow execution: {e}")
+            raise
+
+    def complete_workflow_execution(
+        self,
+        execution_id: int,
+        status: str,
+        output_data: Optional[Dict] = None,
+        error_message: Optional[str] = None
+    ):
+        """Mark a workflow execution as completed"""
+        try:
+            execution = self.db.query(WorkflowExecution).get(execution_id)
+            if not execution:
+                raise ValueError(f"Execution {execution_id} not found")
+            
+            execution.status = status
+            execution.completed_at = datetime.utcnow()
+            execution.output_data = output_data
+            execution.error_message = error_message
+            
+            if execution.started_at:
+                execution.execution_time_ms = int(
+                    (execution.completed_at - execution.started_at).total_seconds() * 1000
+                )
+            
+            self.db.commit()
+            
+            # Publish workflow completed event
+            publish_workflow_event("workflow.completed", {
+                "workflow_id": execution.workflow_id,
+                "execution_id": execution.id,
+                "status": status,
+                "execution_time_ms": execution.execution_time_ms
+            })
+        except Exception as e:
+            self.db.rollback()
+            logging.error(f"Failed to complete workflow execution: {e}")
+            raise</pre>
+                    </div>
+                </div>
+
+                <!-- Orchestrator Service -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">app/services/orchestrator.py</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>from typing import Dict, List, Optional
+import logging
+from datetime import datetime
+from sqlalchemy.orm import Session
+from app.models.task import TaskExecution, TaskStatus
+from app.models.workflow import WorkflowExecution
+from app.events.producers import publish_task_event
+from app.services.task_dispatcher import dispatch_task
+
+class WorkflowOrchestrator:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def execute_task(self, task_execution_id: int):
+        """Execute a specific task within a workflow"""
+        try:
+            task_execution = self.db.query(TaskExecution).get(task_execution_id)
+            if not task_execution:
+                raise ValueError(f"Task execution {task_execution_id} not found")
+            
+            # Update task status to running
+            task_execution.status = TaskStatus.RUNNING.value
+            task_execution.started_at = datetime.utcnow()
+            self.db.commit()
+            
+            # Dispatch the task to appropriate handler
+            task = task_execution.task
+            result = dispatch_task(
+                task.task_type,
+                task.config,
+                task_execution.input_data
+            )
+            
+            # Update task execution with results
+            task_execution.status = TaskStatus.COMPLETED.value
+            task_execution.completed_at = datetime.utcnow()
+            task_execution.output_data = result.get("output")
+            task_execution.execution_time_ms = int(
+                (task_execution.completed_at - task_execution.started_at).total_seconds() * 1000
+            )
+            self.db.commit()
+            
+            # Publish task completed event
+            publish_task_event("task.completed", {
+                "task_id": task.id,
+                "execution_id": task_execution.id,
+                "workflow_execution_id": task_execution.workflow_execution_id,
+                "status": TaskStatus.COMPLETED.value
+            })
+            
+            # Check for dependent tasks to trigger next
+            self._trigger_dependent_tasks(
+                task_execution.workflow_execution_id,
+                task.id
+            )
+            
+            return task_execution
+        except Exception as e:
+            logging.error(f"Task execution failed: {e}")
+            self._handle_task_failure(task_execution_id, str(e))
+            raise
+
+    def _trigger_dependent_tasks(self, workflow_execution_id: int, completed_task_id: int):
+        """Find and trigger tasks that depend on the completed task"""
+        try:
+            # Find all tasks that depend on the completed task
+            dependent_tasks = self.db.query(Task).filter(
+                Task.depends_on.contains([completed_task_id])
+            ).all()
+            
+            for task in dependent_tasks:
+                # Check if all dependencies are completed
+                all_deps_completed = self._check_dependencies_completed(
+                    workflow_execution_id,
+                    task.depends_on
+                )
+                
+                if all_deps_completed:
+                    # Create task execution if not exists
+                    existing_exec = self.db.query(TaskExecution).filter(
+                        TaskExecution.task_id == task.id,
+                        TaskExecution.workflow_execution_id == workflow_execution_id
+                    ).first()
+                    
+                    if not existing_exec:
+                        task_execution = TaskExecution(
+                            task_id=task.id,
+                            workflow_execution_id=workflow_execution_id,
+                            status=TaskStatus.PENDING.value
+                        )
+                        self.db.add(task_execution)
+                        self.db.commit()
+        except Exception as e:
+            logging.error(f"Failed to trigger dependent tasks: {e}")
+            raise
+
+    def _check_dependencies_completed(self, workflow_execution_id: int, dependencies: List[int]) -> bool:
+        """Check if all dependent tasks are completed"""
+        if not dependencies:
+            return True
+            
+        completed_count = self.db.query(TaskExecution).filter(
+            TaskExecution.workflow_execution_id == workflow_execution_id,
+            TaskExecution.task_id.in_(dependencies),
+            TaskExecution.status == TaskStatus.COMPLETED.value
+        ).count()
+        
+        return completed_count == len(dependencies)
+
+    def _handle_task_failure(self, task_execution_id: int, error: str):
+        """Handle task execution failure"""
+        try:
+            task_execution = self.db.query(TaskExecution).get(task_execution_id)
+            if not task_execution:
+                return
+                
+            task = task_execution.task
+            retry_policy = task.retry_policy or {}
+            max_retries = retry_policy.get("max_retries", 0)
+            
+            if task_execution.retry_count < max_retries:
+                # Schedule retry
+                task_execution.retry_count += 1
+                task_execution.status = TaskStatus.PENDING.value
+                task_execution.error_message = error
+                self.db.commit()
+                
+                # Publish task retry event
+                publish_task_event("task.retry", {
+                    "task_id": task.id,
+                    "execution_id": task_execution.id,
+                    "retry_count": task_execution.retry_count,
+                    "max_retries": max_retries
+                })
+            else:
+                # Mark as failed
+                task_execution.status = TaskStatus.FAILED.value
+                task_execution.completed_at = datetime.utcnow()
+                task_execution.error_message = error
+                self.db.commit()
+                
+                # Publish task failed event
+                publish_task_event("task.failed", {
+                    "task_id": task.id,
+                    "execution_id": task_execution.id,
+                    "error": error
+                })
+                
+                # Mark workflow execution as failed
+                workflow_execution = task_execution.workflow_execution
+                workflow_execution.status = "failed"
+                workflow_execution.error_message = f"Task {task.name} failed: {error}"
+                self.db.commit()
+        except Exception as e:
+            logging.error(f"Failed to handle task failure: {e}")
+            self.db.rollback()
+            raise</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🔌 API Endpoints</h2>
+
+            <div class="space-y-4">
+                <!-- Workflow Endpoints -->
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/v1/workflows</span>
+                    </div>
+                    <p class="text-gray-700">Create a new workflow definition</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">{"name": "Data Pipeline", "definition": {"tasks": [...]}, "created_by": "user@example.com"}</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-get font-bold mr-3">GET</span>
+                        <span class="route font-mono">/api/v1/workflows/{workflow_id}</span>
+                    </div>
+                    <p class="text-gray-700">Get workflow details including tasks</p>
+                </div>
+
+                <!-- Execution Endpoints -->
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/v1/workflows/{workflow_id}/execute</span>
+                    </div>
+                    <p class="text-gray-700">Start a new workflow execution</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">{"triggered_by": "user@example.com", "input_data": {...}}</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-get font-bold mr-3">GET</span>
+                        <span class="route font-mono">/api/v1/executions/{execution_id}</span>
+                    </div>
+                    <p class="text-gray-700">Get execution status and details</p>
+                </div>
+
+                <!-- Task Endpoints -->
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-get font-bold mr-3">GET</span>
+                        <span class="route font-mono">/api/v1/executions/{execution_id}/tasks</span>
+                    </div>
+                    <p class="text-gray-700">List all tasks for an execution</p>
+                </div>
+
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-get font-bold mr-3">GET</span>
+                        <span class="route font-mono">/api/v1/executions/{execution_id}/tasks/{task_id}</span>
+                    </div>
+                    <p class="text-gray-700">Get task execution details and logs</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">📡 Event Schema</h2>
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="bg-gray-800 text-white px-4 py-3">
+                    <h3 class="font-semibold">app/events/schemas.py</h3>
+                </div>
+                <div class="p-4">
+                    <pre>from datetime import datetime
+from enum import Enum
+from typing import Optional, Dict, Any, List
+from pydantic import BaseModel
+
+class EventType(str, Enum):
+    WORKFLOW_STARTED = "workflow.started"
+    WORKFLOW_COMPLETED = "workflow.completed"
+    WORKFLOW_FAILED = "workflow.failed"
+    TASK_QUEUED = "task.queued"
+    TASK_STARTED = "task.started"
+    TASK_COMPLETED = "task.completed"
+    TASK_FAILED = "task.failed"
+    TASK_RETRY = "task.retry"
+
+class BaseEvent(BaseModel):
+    event_type: EventType
+    timestamp: datetime = datetime.utcnow()
+    source: str = "workflow-orchestrator"
+
+class WorkflowEvent(BaseEvent):
+    workflow_id: int
+    execution_id: int
+    triggered_by: Optional[str] = None
+    status: Optional[str] = None
+    execution_time_ms: Optional[int] = None
+
+class TaskEvent(BaseEvent):
+    task_id: int
+    execution_id: int
+    workflow_execution_id: int
+    status: Optional[str] = None
+    retry_count: Optional[int] = None
+    max_retries: Optional[int] = None
+    error: Optional[str] = None
+    execution_time_ms: Optional[int] = None
+
+class TaskDispatchEvent(BaseModel):
+    task_id: int
+    execution_id: int
+    workflow_execution_id: int
+    task_type: str
+    config: Dict[str, Any]
+    input_data: Optional[Dict[str, Any]] = None
+    priority: int = 0
+    timeout_seconds: int = 300</pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🐳 Docker Deployment</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-4">Dockerfile</h3>
+                <pre>FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]</pre>
+
+                <h3 class="text-xl font-semibold mt-6 mb-4">docker-compose.yml</h3>
+                <pre>version: '3.8'
+
+services:
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/workflow_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - WORKFLOW_MAX_RETRIES=3
+      - TASK_TIMEOUT_SECONDS=300
+    depends_on:
+      - db
+      - kafka
+
+  db:
+    image: postgres:14
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=workflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  kafka:
+    image: bitnami/kafka:3.1
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka_data:/bitnami
+
+volumes:
+  postgres_data:
+  kafka_data:</pre>
+            </div>
+        </section>
+
+        <footer class="text-center text-gray-600 mt-12">
+            <p>Workflow Orchestration Module Backend - Complete Implementation</p>
+            <p class="mt-2">Analyzes requirements, orchestrates workflows, and schedules tasks for execution</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Platform Modules - Data Integration & Model Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .module-card {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        .tech-badge {
+            transition: all 0.2s ease;
+        }
+        .tech-badge:hover {
+            transform: scale(1.05);
+        }
+        .dependency-item {
+            transition: all 0.2s ease;
+        }
+        .dependency-item:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        .score-bar {
+            transition: width 1s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-12 text-gray-800">
+            <i class="fas fa-cubes mr-3"></i> AI Platform Architecture Modules
+        </h1>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Module 4: Data Integration -->
+            <div class="module-card bg-[#f5f5f5] rounded-xl p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-lg bg-gray-300 flex items-center justify-center mr-4">
+                        <i class="fas fa-exchange-alt text-gray-700 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-semibold text-gray-800">Module 4: Data Integration</h2>
+                </div>
+                
+                <p class="text-gray-600 mb-6">
+                    Manages event-driven communication via a message bus, caches intermediate results, 
+                    and assembles final applications with high efficiency and scalability.
+                </p>
+                
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium text-gray-700">AI Buildability Score</span>
+                        <span class="font-bold">5/5</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-4">
+                        <div class="score-bar bg-green-500 h-4 rounded-full" style="width: 100%"></div>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">
+                        Standard message queue and caching patterns are highly AI-buildable.
+                    </p>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-700 mb-3 flex items-center">
+                        <i class="fas fa-link mr-2"></i> Dependencies
+                    </h3>
+                    <ul class="space-y-2">
+                        <li class="dependency-item flex items-center bg-white bg-opacity-50 p-2 rounded-lg">
+                            <i class="fas fa-server text-gray-500 mr-2"></i>
+                            Kafka for message bus
+                        </li>
+                        <li class="dependency-item flex items-center bg-white bg-opacity-50 p-2 rounded-lg">
+                            <i class="fas fa-database text-gray-500 mr-2"></i>
+                            Redis for caching
+                        </li>
+                        <li class="dependency-item flex items-center bg-white bg-opacity-50 p-2 rounded-lg">
+                            <i class="fab fa-python text-gray-500 mr-2"></i>
+                            Python/FastAPI for application assembly
+                        </li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-medium text-gray-700 mb-3 flex items-center">
+                        <i class="fas fa-layer-group mr-2"></i> Technology Stack
+                    </h3>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tech-badge bg-gray-800 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                            <i class="fab fa-docker mr-1"></i> Kafka
+                        </span>
+                        <span class="tech-badge bg-red-600 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                            <i class="fas fa-bolt mr-1"></i> Redis
+                        </span>
+                        <span class="tech-badge bg-green-600 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                            <i class="fab fa-python mr-1"></i> FastAPI
+                        </span>
+                        <span class="tech-badge bg-blue-500 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                            <i class="fab fa-docker mr-1"></i> Docker
+                        </span>
+                        <span class="tech-badge bg-purple-600 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                            <i class="fas fa-ship mr-1"></i> Kubernetes
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Module 5: Model Management -->
+            <div class="module-card bg-[#cce5ff] rounded-xl p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-lg bg-blue-200 flex items-center justify-center mr-4">
+                        <i class="fas fa-brain text-blue-700 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-semibold text-gray-800">Module 5: Model Management</h2>
+                </div>
+                
+                <p class="text-gray-600 mb-6">
+                    Stores, loads, and extends AI models with support for dynamic model loading 
+                    and plugin integrations, enabling flexible model deployment.
+                </p>
+                
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium text-gray-700">AI Buildability Score</span>
+                        <span class="font-bold">4/5</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-4">
+                        <div class="score-bar bg-blue-400 h-4 rounded-full" style="width: 80%"></div>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">
+                        Model storage and loading are straightforward, but plugin interfaces require careful design.
+                    </p>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-700 mb-3 flex items-center">
+                        <i class="fas fa-link mr-2"></i> Dependencies
+                    </h3>
+                    <ul class="space-y-2">
+                        <li class="dependency-item flex items-center bg-white bg-opacity-50 p-2 rounded-lg">
+                            <i class="fas fa-database text-blue-500 mr-2"></i>
+                            MongoDB for model metadata
+                        </li>
+                        <li class="dependency-item flex items-center bg-white bg-opacity-50 p-2 rounded-lg">
+                            <i class="fas fa-lock text-blue-500 mr-2"></i>
+                            Python cryptography library for encryption
+                        </li>
+                        <li class="dependency-item flex items-center bg-white bg-opacity-50 p-2 rounded-lg">
+                            <i class="fab fa-python text-blue-500 mr-2"></i>
+                            FastAPI for plugin interface
+                        </li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-medium text-gray-700 mb-3 flex items-center">
+                        <i class="fas fa-layer-group mr-2"></i> Technology Stack
+                    </h3>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tech-badge bg-green-600 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                            <i class="fab fa-python mr-1"></i> FastAPI
+                        </span>
+                        <span class="tech-badge bg-green-700 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                            <i class="fas fa-leaf mr-1"></i> MongoDB
+                        </span>
+                        <span class="tech-badge bg-gray-700 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                            <i class="fas fa-key mr-1"></i> Cryptography
+                        </span>
+                        <span class="tech-badge bg-blue-500 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                            <i class="fab fa-docker mr-1"></i> Docker
+                        </span>
+                        <span class="tech-badge bg-purple-600 text-white px-3 py-1 rounded-full text-sm flex items-center">
+                            <i class="fas fa-ship mr-1"></i> Kubernetes
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-12 bg-white rounded-xl p-6 shadow-md">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-project-diagram mr-3"></i> Module Interaction Diagram
+            </h2>
+            <div class="flex flex-col items-center">
+                <div class="relative w-full max-w-3xl">
+                    <!-- Connection line -->
+                    <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4/5 h-1 bg-gray-300 rounded-full"></div>
+                    
+                    <!-- Module 4 -->
+                    <div class="absolute left-0 top-1/2 transform -translate-y-1/2 w-24 h-24 rounded-full bg-[#f5f5f5] flex items-center justify-center shadow-md border-4 border-white">
+                        <i class="fas fa-exchange-alt text-gray-700 text-2xl"></i>
+                    </div>
+                    
+                    <!-- Arrow -->
+                    <div class="absolute left-1/2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                    
+                    <!-- Module 5 -->
+                    <div class="absolute right-0 top-1/2 transform -translate-y-1/2 w-24 h-24 rounded-full bg-[#cce5ff] flex items-center justify-center shadow-md border-4 border-white">
+                        <i class="fas fa-brain text-blue-700 text-2xl"></i>
+                    </div>
+                    
+                    <!-- Labels -->
+                    <div class="absolute left-0 bottom-0 transform translate-y-10 w-24 text-center">
+                        <span class="font-medium">Data Integration</span>
+                    </div>
+                    <div class="absolute right-0 bottom-0 transform translate-y-10 w-24 text-center">
+                        <span class="font-medium">Model Management</span>
+                    </div>
+                </div>
+                
+                <p class="mt-24 text-gray-600 text-center max-w-2xl">
+                    The Data Integration module processes and prepares incoming data streams, then forwards them 
+                    to the Model Management module which loads appropriate AI models to process the data, 
+                    creating a seamless pipeline for AI-powered applications.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple animation on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.module-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                }, index * 100);
+            });
+            
+            // Animate score bars
+            setTimeout(() => {
+                document.querySelectorAll('.score-bar').forEach(bar => {
+                    bar.style.width = bar.style.width;
+                });
+            }, 500);
+            
+            // Add hover effect to diagram elements
+            const diagramElements = document.querySelectorAll('.relative > div');
+            diagramElements.forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    el.style.transform = el.style.transform.replace('scale(1)', 'scale(1.05)');
+                });
+                el.addEventListener('mouseleave', () => {
+                    el.style.transform = el.style.transform.replace('scale(1.05)', 'scale(1)');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

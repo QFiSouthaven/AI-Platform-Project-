@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Platform Dashboard Backend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .method-get { color: #10B981; }
+        .method-post { color: #3B82F6; }
+        .method-put { color: #F59E0B; }
+        .method-delete { color: #EF4444; }
+        .method-patch { color: #8B5CF6; }
+        pre {
+            background-color: #1E293B;
+            color: #F8FAFC;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        .endpoint-card {
+            border-left: 4px solid;
+            transition: all 0.2s ease;
+        }
+        .endpoint-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">AI Platform Dashboard Backend</h1>
+            <p class="text-xl text-gray-600">Complete backend implementation for monitoring AI models, experiments, and deployments</p>
+        </header>
+
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 rounded">
+            <div class="flex">
+                <div class="ml-3">
+                    <p class="text-sm text-yellow-700">
+                        This backend uses Node.js with Express and MongoDB. It provides API endpoints for managing AI models, experiments, deployments, and monitoring metrics.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🚀 Quick Start</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <ol class="list-decimal pl-5 space-y-3">
+                    <li>Install Node.js (v16+) and MongoDB</li>
+                    <li>Clone the repository: <code class="bg-gray-100 px-2 py-1 rounded">git clone https://github.com/yourrepo/ai-platform-backend.git</code></li>
+                    <li>Install dependencies: <code class="bg-gray-100 px-2 py-1 rounded">npm install</code></li>
+                    <li>Create a <code class="bg-gray-100 px-2 py-1 rounded">.env</code> file with your configuration:
+                        <pre class="mt-3">NODE_ENV=development
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/ai-platform
+JWT_SECRET=your_jwt_secret_here
+API_KEY=your_api_key_here
+MODEL_STORAGE_PATH=./storage/models
+DATASET_STORAGE_PATH=./storage/datasets</pre>
+                    </li>
+                    <li>Start the server: <code class="bg-gray-100 px-2 py-1 rounded">npm run dev</code></li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">📦 Project Structure</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <pre>ai-platform-backend/
+├── config/               # Configuration files
+│   ├── db.js             # Database connection
+│   └── storage.js        # File storage configuration
+├── controllers/          # Route controllers
+│   ├── authController.js
+│   ├── deploymentController.js
+│   ├── experimentController.js
+│   ├── modelController.js
+│   └── monitoringController.js
+├── middlewares/          # Custom middlewares
+│   ├── auth.js           # Authentication
+│   └── upload.js         # File upload handling
+├── models/               # MongoDB models
+│   ├── Deployment.js
+│   ├── Experiment.js
+│   ├── Model.js
+│   ├── User.js
+│   └── MonitoringData.js
+├── routes/               # API routes
+│   ├── auth.js
+│   ├── deployments.js
+│   ├── experiments.js
+│   ├── models.js
+│   └── monitoring.js
+├── services/             # Business logic
+│   ├── modelService.js
+│   ├── experimentService.js
+│   └── deploymentService.js
+├── utils/                # Utility functions
+│   ├── logger.js
+│   ├── errorHandler.js
+│   └── validation.js
+├── app.js                # Express app configuration
+└── server.js             # Server entry point</pre>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🗄️ Database Models</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Model Schema -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">models/Model.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const mongoose = require('mongoose');
+
+const modelSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    description: String,
+    framework: { 
+        type: String, 
+        enum: ['TensorFlow', 'PyTorch', 'Scikit-learn', 'ONNX', 'Other'],
+        required: true
+    },
+    version: { type: String, required: true },
+    taskType: {
+        type: String,
+        enum: ['Classification', 'Regression', 'Clustering', 'Generation', 'Other'],
+        required: true
+    },
+    filePath: { type: String, required: true },
+    inputShape: { type: Array, required: true },
+    outputShape: { type: Array, required: true },
+    metrics: {
+        accuracy: Number,
+        precision: Number,
+        recall: Number,
+        f1Score: Number,
+        customMetrics: Map
+    },
+    tags: [String],
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('Model', modelSchema);</pre>
+                    </div>
+                </div>
+
+                <!-- Experiment Schema -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">models/Experiment.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const mongoose = require('mongoose');
+
+const experimentSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    description: String,
+    modelId: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Model',
+        required: true
+    },
+    dataset: {
+        name: String,
+        size: Number,
+        features: Number,
+        samples: Number
+    },
+    hyperparameters: Map,
+    status: {
+        type: String,
+        enum: ['Pending', 'Running', 'Completed', 'Failed'],
+        default: 'Pending'
+    },
+    results: {
+        trainingLoss: [Number],
+        validationLoss: [Number],
+        accuracy: [Number],
+        otherMetrics: Map
+    },
+    startTime: Date,
+    endTime: Date,
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdAt: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('Experiment', experimentSchema);</pre>
+                    </div>
+                </div>
+
+                <!-- Deployment Schema -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">models/Deployment.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const mongoose = require('mongoose');
+
+const deploymentSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    modelId: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Model',
+        required: true
+    },
+    environment: {
+        type: String,
+        enum: ['Development', 'Staging', 'Production'],
+        required: true
+    },
+    status: {
+        type: String,
+        enum: ['Deploying', 'Active', 'Inactive', 'Failed'],
+        default: 'Deploying'
+    },
+    endpoint: String,
+    replicas: { type: Number, default: 1 },
+    resources: {
+        cpu: String,
+        memory: String,
+        gpu: Boolean
+    },
+    lastDeployed: Date,
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdAt: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('Deployment', deploymentSchema);</pre>
+                    </div>
+                </div>
+
+                <!-- Monitoring Data Schema -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">models/MonitoringData.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const mongoose = require('mongoose');
+
+const monitoringDataSchema = new mongoose.Schema({
+    deploymentId: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Deployment',
+        required: true
+    },
+    timestamp: { type: Date, default: Date.now },
+    metrics: {
+        latency: Number,
+        throughput: Number,
+        errorRate: Number,
+        cpuUsage: Number,
+        memoryUsage: Number,
+        customMetrics: Map
+    },
+    predictions: {
+        count: Number,
+        success: Number,
+        failed: Number
+    },
+    alerts: [{
+        type: { type: String, required: true },
+        message: String,
+        severity: {
+            type: String,
+            enum: ['Critical', 'Warning', 'Info']
+        }
+    }]
+});
+
+module.exports = mongoose.model('MonitoringData', monitoringDataSchema);</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🛠️ Core Controllers</h2>
+
+            <div class="space-y-6">
+                <!-- Model Controller -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">controllers/modelController.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const Model = require('../models/Model');
+const fs = require('fs');
+const path = require('path');
+const { uploadModel } = require('../middlewares/upload');
+const { validateModel } = require('../utils/validation');
+
+exports.uploadModel = async (req, res) => {
+    try {
+        await uploadModel(req, res);
+        
+        if (!req.file) {
+            return res.status(400).json({ message: 'Please upload a model file' });
+        }
+
+        const { error } = validateModel(req.body);
+        if (error) {
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({ message: error.details[0].message });
+        }
+
+        const model = new Model({
+            ...req.body,
+            filePath: req.file.path,
+            createdBy: req.user.id
+        });
+
+        await model.save();
+        res.status(201).json(model);
+    } catch (err) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.getModels = async (req, res) => {
+    try {
+        const { framework, taskType, search } = req.query;
+        const query = {};
+        
+        if (framework) query.framework = framework;
+        if (taskType) query.taskType = taskType;
+        if (search) query.name = { $regex: search, $options: 'i' };
+        
+        const models = await Model.find(query)
+            .populate('createdBy', 'name email')
+            .sort({ createdAt: -1 });
+            
+        res.json(models);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.getModelMetrics = async (req, res) => {
+    try {
+        const model = await Model.findById(req.params.id);
+        if (!model) return res.status(404).json({ message: 'Model not found' });
+        
+        res.json(model.metrics);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};</pre>
+                    </div>
+                </div>
+
+                <!-- Experiment Controller -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">controllers/experimentController.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const Experiment = require('../models/Experiment');
+const Model = require('../models/Model');
+const { startTrainingJob } = require('../services/experimentService');
+
+exports.createExperiment = async (req, res) => {
+    try {
+        const model = await Model.findById(req.body.modelId);
+        if (!model) return res.status(404).json({ message: 'Model not found' });
+
+        const experiment = new Experiment({
+            ...req.body,
+            status: 'Pending',
+            createdBy: req.user.id
+        });
+
+        await experiment.save();
+        
+        // Start training job asynchronously
+        startTrainingJob(experiment._id);
+        
+        res.status(201).json(experiment);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};
+
+exports.getExperiments = async (req, res) => {
+    try {
+        const { status, modelId, search } = req.query;
+        const query = {};
+        
+        if (status) query.status = status;
+        if (modelId) query.modelId = modelId;
+        if (search) query.name = { $regex: search, $options: 'i' };
+        
+        const experiments = await Experiment.find(query)
+            .populate('modelId', 'name framework')
+            .populate('createdBy', 'name email')
+            .sort({ createdAt: -1 });
+            
+        res.json(experiments);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.getExperimentResults = async (req, res) => {
+    try {
+        const experiment = await Experiment.findById(req.params.id);
+        if (!experiment) return res.status(404).json({ message: 'Experiment not found' });
+        
+        res.json({
+            hyperparameters: experiment.hyperparameters,
+            results: experiment.results
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};</pre>
+                    </div>
+                </div>
+
+                <!-- Deployment Controller -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">controllers/deploymentController.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const Deployment = require('../models/Deployment');
+const Model = require('../models/Model');
+const { deployModel } = require('../services/deploymentService');
+
+exports.createDeployment = async (req, res) => {
+    try {
+        const model = await Model.findById(req.body.modelId);
+        if (!model) return res.status(404).json({ message: 'Model not found' });
+
+        const deployment = new Deployment({
+            ...req.body,
+            status: 'Deploying',
+            createdBy: req.user.id
+        });
+
+        await deployment.save();
+        
+        // Start deployment process asynchronously
+        deployModel(deployment._id, model.filePath);
+        
+        res.status(201).json(deployment);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};
+
+exports.getDeployments = async (req, res) => {
+    try {
+        const { status, environment, search } = req.query;
+        const query = {};
+        
+        if (status) query.status = status;
+        if (environment) query.environment = environment;
+        if (search) query.name = { $regex: search, $options: 'i' };
+        
+        const deployments = await Deployment.find(query)
+            .populate('modelId', 'name framework')
+            .populate('createdBy', 'name email')
+            .sort({ createdAt: -1 });
+            
+        res.json(deployments);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.updateDeployment = async (req, res) => {
+    try {
+        const deployment = await Deployment.findById(req.params.id);
+        if (!deployment) return res.status(404).json({ message: 'Deployment not found' });
+
+        if (req.body.replicas) deployment.replicas = req.body.replicas;
+        if (req.body.resources) deployment.resources = req.body.resources;
+        
+        await deployment.save();
+        res.json(deployment);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🔌 API Endpoints</h2>
+
+            <div class="space-y-4">
+                <!-- Models Endpoints -->
+                <div class="endpoint-card border-green-500 bg-white rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-get font-bold mr-3">GET</span>
+                        <span class="route font-mono">/api/models</span>
+                    </div>
+                    <p class="text-gray-700">Get all AI models with optional filtering</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Query Params</span>
+                        <span class="text-sm text-gray-600">framework, taskType, search</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-card border-blue-500 bg-white rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/models</span>
+                    </div>
+                    <p class="text-gray-700">Upload a new AI model</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">name, framework, taskType, version, inputShape, outputShape + model file</span>
+                    </div>
+                </div>
+
+                <!-- Experiments Endpoints -->
+                <div class="endpoint-card border-green-500 bg-white rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-get font-bold mr-3">GET</span>
+                        <span class="route font-mono">/api/experiments</span>
+                    </div>
+                    <p class="text-gray-700">Get all experiments with optional filtering</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Query Params</span>
+                        <span class="text-sm text-gray-600">status, modelId, search</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-card border-blue-500 bg-white rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/experiments</span>
+                    </div>
+                    <p class="text-gray-700">Create a new training experiment</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">name, modelId, dataset, hyperparameters</span>
+                    </div>
+                </div>
+
+                <!-- Deployments Endpoints -->
+                <div class="endpoint-card border-green-500 bg-white rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-get font-bold mr-3">GET</span>
+                        <span class="route font-mono">/api/deployments</span>
+                    </div>
+                    <p class="text-gray-700">Get all deployments with optional filtering</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Query Params</span>
+                        <span class="text-sm text-gray-600">status, environment, search</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-card border-blue-500 bg-white rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/deployments</span>
+                    </div>
+                    <p class="text-gray-700">Create a new model deployment</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">name, modelId, environment, resources</span>
+                    </div>
+                </div>
+
+                <!-- Monitoring Endpoints -->
+                <div class="endpoint-card border-green-500 bg-white rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-get font-bold mr-3">GET</span>
+                        <span class="route font-mono">/api/monitoring/:deploymentId</span>
+                    </div>
+                    <p class="text-gray-700">Get monitoring data for a deployment</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Query Params</span>
+                        <span class="text-sm text-gray-600">startTime, endTime, interval</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-card border-purple-500 bg-white rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-patch font-bold mr-3">PATCH</span>
+                        <span class="route font-mono">/api/deployments/:id</span>
+                    </div>
+                    <p class="text-gray-700">Update deployment configuration</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">replicas, resources</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">⚙️ Advanced Features</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Model Service -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">services/modelService.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const tf = require('@tensorflow/tfjs-node');
+const Model = require('../models/Model');
+const logger = require('../utils/logger');
+
+exports.validateModel = async (filePath) => {
+    try {
+        const model = await tf.loadLayersModel(`file://${filePath}`);
+        const inputShape = model.inputs[0].shape.slice(1);
+        const outputShape = model.outputs[0].shape.slice(1);
+        
+        return {
+            valid: true,
+            inputShape,
+            outputShape
+        };
+    } catch (err) {
+        logger.error(`Model validation failed: ${err.message}`);
+        return { valid: false, error: err.message };
+    }
+};
+
+exports.convertModelFormat = async (sourcePath, targetFormat) => {
+    // Implementation for model format conversion
+    // (e.g., TensorFlow SavedModel to ONNX)
+    // This would use appropriate conversion tools
+};</pre>
+                    </div>
+                </div>
+
+                <!-- Deployment Service -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">services/deploymentService.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const Docker = require('dockerode');
+const fs = require('fs');
+const path = require('path');
+const logger = require('../utils/logger');
+const Deployment = require('../models/Deployment');
+
+const docker = new Docker();
+
+exports.deployModel = async (deploymentId, modelPath) => {
+    try {
+        const deployment = await Deployment.findById(deploymentId);
+        if (!deployment) {
+            throw new Error('Deployment not found');
+        }
+
+        // Create Docker container with the model
+        const container = await docker.createContainer({
+            Image: 'tensorflow/serving',
+            Cmd: [`--model_name=${deployment.name}`, `--model_base_path=/models`],
+            HostConfig: {
+                Binds: [`${path.resolve(modelPath)}:/models/${deployment.name}`]
+            },
+            ExposedPorts: { '8501/tcp': {} },
+            PortBindings: { '8501/tcp': [{ HostPort: '0' }] }
+        });
+
+        await container.start();
+        
+        // Get assigned port
+        const containerInfo = await container.inspect();
+        const port = containerInfo.NetworkSettings.Ports['8501/tcp'][0].HostPort;
+        
+        // Update deployment status
+        deployment.status = 'Active';
+        deployment.endpoint = `http://localhost:${port}/v1/models/${deployment.name}:predict`;
+        await deployment.save();
+        
+        logger.info(`Deployment ${deploymentId} successful. Endpoint: ${deployment.endpoint}`);
+    } catch (err) {
+        logger.error(`Deployment failed: ${err.message}`);
+        
+        // Update deployment status if it exists
+        const deployment = await Deployment.findById(deploymentId);
+        if (deployment) {
+            deployment.status = 'Failed';
+            await deployment.save();
+        }
+    }
+};</pre>
+                    </div>
+                </div>
+
+                <!-- Monitoring Service -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">services/monitoringService.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const MonitoringData = require('../models/MonitoringData');
+const logger = require('../utils/logger');
+const axios = require('axios');
+
+exports.collectMetrics = async (deploymentId) => {
+    try {
+        const deployment = await Deployment.findById(deploymentId).populate('modelId');
+        if (!deployment || deployment.status !== 'Active') return;
+        
+        // Get prediction metrics
+        const predictions = await getPredictionMetrics(deployment.endpoint);
+        
+        // Get system metrics
+        const systemMetrics = await getSystemMetrics(deploymentId);
+        
+        // Save monitoring data
+        const monitoringData = new MonitoringData({
+            deploymentId,
+            metrics: {
+                latency: predictions.latency,
+                throughput: predictions.throughput,
+                errorRate: predictions.errorRate,
+                cpuUsage: systemMetrics.cpu,
+                memoryUsage: systemMetrics.memory
+            },
+            predictions: {
+                count: predictions.count,
+                success: predictions.success,
+                failed: predictions.failed
+            }
+        });
+        
+        await monitoringData.save();
+    } catch (err) {
+        logger.error(`Monitoring collection failed: ${err.message}`);
+    }
+};
+
+exports.checkForAnomalies = async (deploymentId) => {
+    // Implementation for anomaly detection
+    // using statistical methods or ML models
+};</pre>
+                    </div>
+                </div>
+
+                <!-- Auth Middleware -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">middlewares/auth.js</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const logger = require('../utils/logger');
+
+exports.authenticate = async (req, res, next) => {
+    try {
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ message: 'No token provided' });
+        }
+        
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+        
+        if (!user) {
+            return res.status(401).json({ message: 'User not found' });
+        }
+        
+        req.user = user;
+        next();
+    } catch (err) {
+        logger.error(`Authentication error: ${err.message}`);
+        res.status(401).json({ message: 'Invalid token' });
+    }
+};
+
+exports.authorize = (roles) => {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+        next();
+    };
+};</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🚢 Deployment Options</h2>
+
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-4">1. Docker Deployment</h3>
+                <p class="mb-4">Create a <code class="bg-gray-100 px-2 py-1 rounded">Dockerfile</code>:</p>
+                <pre>FROM node:16
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+
+ENV PORT=5000
+ENV NODE_ENV=production
+ENV MONGODB_URI=mongodb://mongodb:27017/ai-platform
+
+EXPOSE 5000
+CMD ["node", "server.js"]</pre>
+
+                <h3 class="text-xl font-semibold mt-6 mb-4">2. Kubernetes Deployment</h3>
+                <p class="mb-2">Create a deployment YAML:</p>
+                <pre>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-platform-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ai-platform-backend
+  template:
+    metadata:
+      labels:
+        app: ai-platform-backend
+    spec:
+      containers:
+      - name: ai-platform-backend
+        image: your-repo/ai-platform-backend:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: MONGODB_URI
+          value: "mongodb://mongodb:27017/ai-platform"
+        - name: NODE_ENV
+          value: "production"</pre>
+
+                <h3 class="text-xl font-semibold mt-6 mb-4">3. Serverless Deployment</h3>
+                <p>Configure for AWS Lambda or similar:</p>
+                <pre>// serverless.yml
+service: ai-platform-backend
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: us-east-1
+
+functions:
+  api:
+    handler: server.handler
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'</pre>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🔐 Security Considerations</h2>
+
+            <div class="bg-white shadow rounded-lg p-6">
+                <ul class="list-disc pl-5 space-y-3">
+                    <li><strong>Authentication:</strong> JWT with strong secret and proper expiration</li>
+                    <li><strong>Authorization:</strong> Role-based access control for sensitive operations</li>
+                    <li><strong>Input Validation:</strong> Validate all incoming data to prevent injection attacks</li>
+                    <li><strong>Rate Limiting:</strong> Implement to prevent abuse of API endpoints</li>
+                    <li><strong>HTTPS:</strong> Always use encrypted connections</li>
+                    <li><strong>Secrets Management:</strong> Store API keys and credentials securely</li>
+                    <li><strong>File Uploads:</strong> Validate file types and scan for malware</li>
+                    <li><strong>CORS:</strong> Configure properly to restrict cross-origin requests</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer class="text-center text-gray-600 mt-12">
+            <p>AI Platform Dashboard Backend - Complete Implementation</p>
+            <p class="mt-2">This backend provides all the necessary APIs to power a full-featured AI platform dashboard with model management, experiment tracking, deployment monitoring, and performance analytics.</p>
+        </footer>
+    </div>
+</body>
+</html>

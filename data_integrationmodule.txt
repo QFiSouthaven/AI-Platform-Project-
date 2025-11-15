@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Integration Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+        }
+        .tech-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .module-diagram {
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm57-13c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm-9-21c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM60 91c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM35 41c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM12 60c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z' fill='%239C92AC' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="mb-12">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-4xl font-bold text-gray-800">Data Integration Module</h1>
+                    <p class="text-gray-600 mt-2">Event-driven communication, caching, and application assembly</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">AI Buildability: 5/5</span>
+                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">Status: Ready</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Module Description -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Functional Description</h2>
+                    <div class="space-y-4 text-gray-700">
+                        <p>This module manages event-driven communication via a message bus, caches intermediate results for improved performance, and assembles final applications from processed data streams.</p>
+                        <div class="flex items-start mt-4">
+                            <div class="flex-shrink-0 h-5 w-5 text-blue-500">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <p class="ml-3">Implements a robust message queue system for reliable event processing</p>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 h-5 w-5 text-blue-500">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <p class="ml-3">Utilizes in-memory caching to reduce latency and database load</p>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 h-5 w-5 text-blue-500">
+                                <i class="fas fa-puzzle-piece"></i>
+                            </div>
+                            <p class="ml-3">Assembles final applications by combining processed data streams</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Architecture Diagram -->
+                <div class="bg-white rounded-xl shadow-md p-6 module-diagram">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Architecture Flow</h2>
+                    <div class="relative h-64 mt-6">
+                        <!-- Diagram elements -->
+                        <div class="absolute left-0 top-1/2 transform -translate-y-1/2 w-16 h-16 bg-red-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                            <i class="fas fa-paper-plane text-xl"></i>
+                        </div>
+                        <div class="absolute left-1/4 top-1/2 transform -translate-y-1/2 w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                            <i class="fas fa-bus text-xl"></i>
+                        </div>
+                        <div class="absolute left-2/4 top-1/2 transform -translate-y-1/2 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                            <i class="fas fa-memory text-xl"></i>
+                        </div>
+                        <div class="absolute left-3/4 top-1/2 transform -translate-y-1/2 w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                            <i class="fas fa-code text-xl"></i>
+                        </div>
+                        
+                        <!-- Connectors -->
+                        <div class="absolute left-16 top-1/2 h-1 bg-gray-300 w-1/4"></div>
+                        <div class="absolute left-2/4 top-1/2 h-1 bg-gray-300 w-1/4 -ml-16"></div>
+                        <div class="absolute left-3/4 top-1/2 h-1 bg-gray-300 w-1/4 -ml-16"></div>
+                        
+                        <!-- Labels -->
+                        <div class="absolute left-0 top-1/2 transform -translate-y-12 text-center w-16 text-sm font-medium text-gray-700">Events</div>
+                        <div class="absolute left-1/4 top-1/2 transform -translate-y-12 text-center w-16 text-sm font-medium text-gray-700">Message Bus</div>
+                        <div class="absolute left-2/4 top-1/2 transform -translate-y-12 text-center w-16 text-sm font-medium text-gray-700">Cache</div>
+                        <div class="absolute left-3/4 top-1/2 transform -translate-y-12 text-center w-16 text-sm font-medium text-gray-700">Assembly</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-8">
+                <!-- Technology Stack -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Technology Stack</h2>
+                    <div class="space-y-4">
+                        <div class="tech-card bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all duration-300">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                                    <i class="fab fa-java"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="font-medium text-gray-900">Apache Kafka</h3>
+                                    <p class="text-sm text-gray-500">Message Queue System</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tech-card bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all duration-300">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600">
+                                    <i class="fas fa-bolt"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="font-medium text-gray-900">Redis</h3>
+                                    <p class="text-sm text-gray-500">In-memory Caching</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tech-card bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all duration-300">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                                    <i class="fab fa-python"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="font-medium text-gray-900">Python/FastAPI</h3>
+                                    <p class="text-sm text-gray-500">Application Assembly</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tech-card bg-gray-50 p-4 rounded-lg border border-gray-200 transition-all duration-300">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
+                                    <i class="fab fa-docker"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="font-medium text-gray-900">Docker/Kubernetes</h3>
+                                    <p class="text-sm text-gray-500">Deployment</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Performance Metrics</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-blue-600">12.5k</div>
+                            <div class="text-sm text-gray-500">Messages/sec</div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-green-600">98.7%</div>
+                            <div class="text-sm text-gray-500">Cache Hit Rate</div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-purple-600">2.3ms</div>
+                            <div class="text-sm text-gray-500">Avg. Latency</div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-3xl font-bold text-yellow-600">99.99%</div>
+                            <div class="text-sm text-gray-500">Uptime</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+                    <div class="space-y-3">
+                        <button class="w-full flex items-center justify-between px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+                            <span>View Message Queue</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button class="w-full flex items-center justify-between px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors">
+                            <span>Monitor Cache</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button class="w-full flex items-center justify-between px-4 py-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors">
+                            <span>Deploy Assembly</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="mt-12 bg-white rounded-xl shadow-md p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="h-3 w-3 rounded-full bg-green-500 pulse-animation"></div>
+                    <span class="text-sm font-medium text-gray-700">System Operational</span>
+                </div>
+                <div class="text-sm text-gray-500">
+                    Last updated: <span id="current-time"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById('current-time').textContent = now.toLocaleDateString('en-US', options);
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Add hover effects to tech cards
+        document.querySelectorAll('.tech-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                const icon = this.querySelector('i');
+                icon.classList.add('fa-spin');
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                const icon = this.querySelector('i');
+                icon.classList.remove('fa-spin');
+            });
+        });
+    </script>
+</body>
+</html>

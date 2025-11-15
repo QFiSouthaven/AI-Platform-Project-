@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Management Module Backend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .method-get { color: #10B981; }
+        .method-post { color: #3B82F6; }
+        .method-put { color: #F59E0B; }
+        .method-delete { color: #EF4444; }
+        pre {
+            background-color: #1E293B;
+            color: #F8FAFC;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        .endpoint-card {
+            border-left: 4px solid #cce5ff;
+            transition: all 0.2s ease;
+            background-color: #f0f8ff;
+        }
+        .endpoint-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .header-bg {
+            background-color: #cce5ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="mb-12 text-center">
+            <div class="header-bg rounded-lg p-6 shadow-inner">
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">Module 5: Model Management Backend</h1>
+                <p class="text-xl text-gray-700">Stores, loads, and extends AI models with dynamic loading and plugin integrations</p>
+                <div class="mt-4 flex justify-center gap-4">
+                    <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">AI Buildability: 4/5</span>
+                    <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">FastAPI</span>
+                    <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">MongoDB</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🚀 Quick Start</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <ol class="list-decimal pl-5 space-y-3">
+                    <li>Install Python 3.9+ and MongoDB</li>
+                    <li>Clone the repository: <code class="bg-gray-100 px-2 py-1 rounded">git clone https://github.com/yourrepo/model-management.git</code></li>
+                    <li>Create virtual environment: <code class="bg-gray-100 px-2 py-1 rounded">python -m venv venv</code></li>
+                    <li>Install dependencies: <code class="bg-gray-100 px-2 py-1 rounded">pip install -r requirements.txt</code></li>
+                    <li>Create a <code class="bg-gray-100 px-2 py-1 rounded">.env</code> file:
+                        <pre class="mt-3">MODEL_STORAGE_PATH=./storage/models
+ENCRYPTION_KEY=your_32_byte_encryption_key
+MONGODB_URI=mongodb://localhost:27017/ai_models
+PLUGINS_DIR=./plugins</pre>
+                    </li>
+                    <li>Start the server: <code class="bg-gray-100 px-2 py-1 rounded">uvicorn main:app --reload</code></li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">📦 Project Structure</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <pre>model-management/
+├── app/                      # Application core
+│   ├── __init__.py
+│   ├── main.py               # FastAPI app
+│   ├── models/               # Data models
+│   │   ├── __init__.py
+│   │   ├── ai_model.py       # AI model schema
+│   │   └── plugin.py         # Plugin schema
+│   ├── services/             # Business logic
+│   │   ├── __init__.py
+│   │   ├── model_service.py  # Model operations
+│   │   └── plugin_service.py # Plugin management
+│   ├── utils/                # Utilities
+│   │   ├── encryption.py     # Model encryption
+│   │   └── storage.py        # File storage
+│   └── api/                  # API endpoints
+│       ├── v1/               # API version 1
+│       │   ├── models.py     # Model endpoints
+│       │   └── plugins.py    # Plugin endpoints
+├── plugins/                  # Plugin directory
+├── storage/                  # Model storage
+├── tests/                    # Tests
+├── requirements.txt          # Python dependencies
+└── Dockerfile                # Container configuration</pre>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🗄️ Database Schema</h2>
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="bg-gray-800 text-white px-4 py-3">
+                    <h3 class="font-semibold">app/models/ai_model.py</h3>
+                </div>
+                <div class="p-4">
+                    <pre>from pydantic import BaseModel, Field
+from typing import List, Optional, Dict
+from datetime import datetime
+from enum import Enum
+
+class ModelFramework(str, Enum):
+    TENSORFLOW = "tensorflow"
+    PYTORCH = "pytorch"
+    ONNX = "onnx"
+    SCIKIT = "scikit-learn"
+    CUSTOM = "custom"
+
+class ModelTaskType(str, Enum):
+    CLASSIFICATION = "classification"
+    REGRESSION = "regression"
+    GENERATION = "generation"
+    CLUSTERING = "clustering"
+    EMBEDDING = "embedding"
+
+class AIModel(BaseModel):
+    id: str = Field(alias="_id")
+    name: str
+    description: Optional[str]
+    framework: ModelFramework
+    task_type: ModelTaskType
+    version: str
+    file_path: str
+    input_shape: List[int]
+    output_shape: List[int]
+    metrics: Dict[str, float]
+    tags: List[str] = []
+    is_encrypted: bool = False
+    plugins: List[str] = []  # List of plugin IDs
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "resnet50-imagenet",
+                "description": "ResNet50 model pretrained on ImageNet",
+                "framework": "tensorflow",
+                "task_type": "classification",
+                "version": "1.0.0",
+                "file_path": "/storage/models/resnet50.h5",
+                "input_shape": [224, 224, 3],
+                "output_shape": [1000],
+                "metrics": {
+                    "accuracy": 0.76,
+                    "top5_accuracy": 0.93
+                },
+                "tags": ["computer-vision", "image-classification"],
+                "is_encrypted": False,
+                "plugins": ["preprocess-v1", "postprocess-v1"]
+            }
+        }</pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🔌 Core Services</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Model Service -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">app/services/model_service.py</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>from typing import List, Optional
+from app.models.ai_model import AIModel, ModelFramework, ModelTaskType
+from app.utils.encryption import encrypt_file, decrypt_file
+from app.utils.storage import store_model_file
+import os
+from datetime import datetime
+
+class ModelService:
+    def __init__(self, db):
+        self.db = db
+
+    async def save_model(
+        self,
+        name: str,
+        framework: ModelFramework,
+        task_type: ModelTaskType,
+        version: str,
+        file_bytes: bytes,
+        input_shape: List[int],
+        output_shape: List[int],
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        encrypt: bool = False
+    ) -> AIModel:
+        # Store the model file
+        file_path = store_model_file(name, version, file_bytes)
+        
+        # Encrypt if requested
+        if encrypt:
+            encrypt_file(file_path)
+        
+        # Create model document
+        model = AIModel(
+            name=name,
+            description=description,
+            framework=framework,
+            task_type=task_type,
+            version=version,
+            file_path=file_path,
+            input_shape=input_shape,
+            output_shape=output_shape,
+            tags=tags or [],
+            is_encrypted=encrypt,
+            metrics={}
+        )
+        
+        # Save to database
+        result = await self.db["ai_models"].insert_one(model.dict(by_alias=True))
+        model.id = str(result.inserted_id)
+        
+        return model
+
+    async def load_model(self, model_id: str) -> AIModel:
+        model_data = await self.db["ai_models"].find_one({"_id": model_id})
+        if not model_data:
+            raise ValueError("Model not found")
+        
+        if model_data["is_encrypted"]:
+            decrypt_file(model_data["file_path"])
+        
+        return AIModel(**model_data)
+
+    async def get_models(
+        self,
+        framework: Optional[ModelFramework] = None,
+        task_type: Optional[ModelTaskType] = None,
+        search: Optional[str] = None
+    ) -> List[AIModel]:
+        query = {}
+        if framework:
+            query["framework"] = framework
+        if task_type:
+            query["task_type"] = task_type
+        if search:
+            query["$or"] = [
+                {"name": {"$regex": search, "$options": "i"}},
+                {"description": {"$regex": search, "$options": "i"}},
+                {"tags": {"$in": [search]}}
+            ]
+        
+        models = []
+        async for model in self.db["ai_models"].find(query):
+            models.append(AIModel(**model))
+        
+        return models</pre>
+                    </div>
+                </div>
+
+                <!-- Plugin Service -->
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="bg-gray-800 text-white px-4 py-3">
+                        <h3 class="font-semibold">app/services/plugin_service.py</h3>
+                    </div>
+                    <div class="p-4">
+                        <pre>import importlib.util
+import os
+from typing import List, Optional
+from app.models.plugin import Plugin
+from fastapi import UploadFile
+from datetime import datetime
+
+class PluginService:
+    def __init__(self, plugins_dir: str):
+        self.plugins_dir = plugins_dir
+        os.makedirs(plugins_dir, exist_ok=True)
+        self.loaded_plugins = {}
+
+    async def install_plugin(self, plugin_file: UploadFile) -> Plugin:
+        # Save the plugin file
+        file_path = os.path.join(self.plugins_dir, plugin_file.filename)
+        with open(file_path, "wb") as f:
+            f.write(await plugin_file.read())
+        
+        # Load the plugin to verify it
+        plugin = self._load_plugin(file_path)
+        
+        # Register the plugin
+        self.loaded_plugins[plugin.id] = plugin
+        
+        return plugin
+
+    def _load_plugin(self, file_path: str) -> Plugin:
+        spec = importlib.util.spec_from_file_location(
+            f"plugin_{os.path.basename(file_path)}", 
+            file_path
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        
+        if not hasattr(module, "Plugin"):
+            raise ValueError("Plugin file must define a Plugin class")
+        
+        plugin_class = module.Plugin
+        plugin_instance = plugin_class()
+        
+        return Plugin(
+            id=plugin_instance.id,
+            name=plugin_instance.name,
+            description=plugin_instance.description,
+            version=plugin_instance.version,
+            file_path=file_path,
+            model_types=plugin_instance.model_types,
+            created_at=datetime.utcnow()
+        )
+
+    def get_plugin(self, plugin_id: str) -> Optional[Plugin]:
+        return self.loaded_plugins.get(plugin_id)
+
+    def get_plugins_for_model(self, model_type: str) -> List[Plugin]:
+        return [
+            plugin for plugin in self.loaded_plugins.values()
+            if model_type in plugin.model_types
+        ]</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🔌 API Endpoints</h2>
+
+            <div class="space-y-4">
+                <!-- Model Endpoints -->
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/v1/models</span>
+                    </div>
+                    <p class="text-gray-700">Upload a new AI model</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Form Data</span>
+                        <span class="text-sm text-gray-600">name, framework, task_type, version, file (model file), input_shape, output_shape, [description, tags, encrypt]</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-get font-bold mr-3">GET</span>
+                        <span class="route font-mono">/api/v1/models</span>
+                    </div>
+                    <p class="text-gray-700">List all available models with optional filtering</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Query Params</span>
+                        <span class="text-sm text-gray-600">framework, task_type, search</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-get font-bold mr-3">GET</span>
+                        <span class="route font-mono">/api/v1/models/{model_id}</span>
+                    </div>
+                    <p class="text-gray-700">Get details about a specific model</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Response</span>
+                        <span class="text-sm text-gray-600">Returns full model metadata including metrics</span>
+                    </div>
+                </div>
+
+                <!-- Plugin Endpoints -->
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/v1/plugins</span>
+                    </div>
+                    <p class="text-gray-700">Install a new plugin</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Form Data</span>
+                        <span class="text-sm text-gray-600">file (Python plugin file)</span>
+                    </div>
+                </div>
+
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-get font-bold mr-3">GET</span>
+                        <span class="route font-mono">/api/v1/plugins</span>
+                    </div>
+                    <p class="text-gray-700">List all installed plugins</p>
+                </div>
+
+                <div class="endpoint-card rounded-lg p-4 shadow">
+                    <div class="flex items-center mb-2">
+                        <span class="method-post font-bold mr-3">POST</span>
+                        <span class="route font-mono">/api/v1/models/{model_id}/plugins</span>
+                    </div>
+                    <p class="text-gray-700">Attach a plugin to a model</p>
+                    <div class="mt-2">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">Body</span>
+                        <span class="text-sm text-gray-600">{"plugin_id": "plugin-id-here"}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🔐 Security Implementation</h2>
+
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="bg-gray-800 text-white px-4 py-3">
+                    <h3 class="font-semibold">app/utils/encryption.py</h3>
+                </div>
+                <div class="p-4">
+                    <pre>from cryptography.fernet import Fernet
+import os
+from typing import Optional
+
+class ModelEncryption:
+    def __init__(self, encryption_key: Optional[str] = None):
+        if encryption_key:
+            if len(encryption_key) != 32:
+                raise ValueError("Encryption key must be 32 bytes")
+            self.key = encryption_key.encode()
+        else:
+            self.key = Fernet.generate_key()
+        
+        self.cipher = Fernet(self.key)
+
+    def encrypt_file(self, file_path: str):
+        with open(file_path, 'rb') as f:
+            data = f.read()
+        
+        encrypted_data = self.cipher.encrypt(data)
+        
+        with open(file_path, 'wb') as f:
+            f.write(encrypted_data)
+
+    def decrypt_file(self, file_path: str):
+        with open(file_path, 'rb') as f:
+            encrypted_data = f.read()
+        
+        try:
+            decrypted_data = self.cipher.decrypt(encrypted_data)
+        except Exception as e:
+            raise ValueError("Decryption failed - invalid key or corrupted data") from e
+        
+        with open(file_path, 'wb') as f:
+            f.write(decrypted_data)
+
+    def get_key(self) -> str:
+        return self.key.decode()</pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🐳 Docker Deployment</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-4">Dockerfile</h3>
+                <pre>FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create storage directories
+RUN mkdir -p /app/storage/models
+RUN mkdir -p /app/plugins
+
+# Environment variables
+ENV MODEL_STORAGE_PATH=/app/storage/models
+ENV PLUGINS_DIR=/app/plugins
+ENV PYTHONPATH=/app
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]</pre>
+
+                <h3 class="text-xl font-semibold mt-6 mb-4">docker-compose.yml</h3>
+                <pre>version: '3.8'
+
+services:
+  model-management:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage
+      - ./plugins:/app/plugins
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/ai_models
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:5.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:</pre>
+            </div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">🧩 Plugin Interface</h2>
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-4">Base Plugin Class</h3>
+                <pre>from abc import ABC, abstractmethod
+from typing import Any, Dict
+
+class BasePlugin(ABC):
+    def __init__(self):
+        self.id = "base-plugin"
+        self.name = "Base Plugin"
+        self.description = "Base plugin class for model extensions"
+        self.version = "1.0.0"
+        self.model_types = []  # List of model frameworks this plugin supports
+
+    @abstractmethod
+    def preprocess(self, input_data: Any, model_metadata: Dict) -> Any:
+        """Preprocess input data before model inference"""
+        pass
+
+    @abstractmethod
+    def postprocess(self, output_data: Any, model_metadata: Dict) -> Any:
+        """Postprocess model output before returning to client"""
+        pass
+
+    def on_load(self):
+        """Called when plugin is loaded"""
+        pass
+
+    def on_unload(self):
+        """Called when plugin is unloaded"""
+        pass</pre>
+
+                <h3 class="text-xl font-semibold mt-6 mb-4">Example Plugin Implementation</h3>
+                <pre>from typing import Any, Dict
+import numpy as np
+from PIL import Image
+from io import BytesIO
+
+class ImagePreprocessPlugin:
+    def __init__(self):
+        self.id = "image-preprocess-v1"
+        self.name = "Image Preprocessor"
+        self.description = "Preprocesses images for computer vision models"
+        self.version = "1.0.0"
+        self.model_types = ["tensorflow", "pytorch"]
+
+    def preprocess(self, input_data: bytes, model_metadata: Dict) -> np.ndarray:
+        """Convert uploaded image to normalized numpy array"""
+        # Load image from bytes
+        img = Image.open(BytesIO(input_data))
+        
+        # Resize to model input shape
+        input_shape = model_metadata["input_shape"]
+        img = img.resize((input_shape[0], input_shape[1]))
+        
+        # Convert to numpy array and normalize
+        img_array = np.array(img) / 255.0
+        
+        # Add batch dimension if needed
+        if len(img_array.shape) == 3:
+            img_array = np.expand_dims(img_array, axis=0)
+            
+        return img_array
+
+    def postprocess(self, output_data: np.ndarray, model_metadata: Dict) -> Dict:
+        """Convert model output to class probabilities"""
+        if model_metadata["task_type"] == "classification":
+            return {
+                "predictions": output_data.tolist(),
+                "top_class": int(np.argmax(output_data))
+            }
+        return {"output": output_data.tolist()}</pre>
+            </div>
+        </section>
+
+        <footer class="text-center text-gray-600 mt-12">
+            <p>Model Management Module Backend - Complete Implementation</p>
+            <p class="mt-2">Provides secure storage, dynamic loading, and extensibility through plugins for AI models</p>
+        </footer>
+    </div>
+</body>
+</html>
