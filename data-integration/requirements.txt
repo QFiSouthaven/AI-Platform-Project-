@@ -1,0 +1,29 @@
+# Data Integration Module - Dependencies
+
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Pydantic for data validation
+pydantic==2.5.2
+pydantic-settings==2.1.0
+
+# Kafka
+aiokafka==0.10.0
+
+# Redis
+redis[hiredis]==5.0.1
+
+# Logging
+structlog==23.2.0
+
+# HTTP Client
+httpx==0.25.2
+
+# Utilities
+python-dateutil==2.8.2
+orjson==3.9.10
+
+# JSON Schema
+jsonschema==4.20.0

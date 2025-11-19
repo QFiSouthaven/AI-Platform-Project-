@@ -1,0 +1,182 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infrastructure-module
+  namespace: ai-platform
+  labels:
+    app: infrastructure-module
+    component: infrastructure
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: infrastructure-module
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: infrastructure-module
+        component: infrastructure
+        tier: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8006"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: infrastructure-module
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      # Init container to wait for dependencies
+      initContainers:
+        - name: wait-for-redis
+          image: busybox:1.35
+          command: ['sh', '-c', 'until nc -z redis 6379; do echo waiting for redis; sleep 2; done']
+        - name: wait-for-kafka
+          image: busybox:1.35
+          command: ['sh', '-c', 'until nc -z kafka 9092; do echo waiting for kafka; sleep 2; done']
+
+      containers:
+        - name: infrastructure-module
+          image: ai-platform/infrastructure-module:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8006
+              protocol: TCP
+
+          # Environment variables from ConfigMap and Secrets
+          envFrom:
+            - configMapRef:
+                name: infrastructure-config
+            - secretRef:
+                name: infrastructure-secrets
+
+          # Resource requests and limits
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+
+          # Liveness probe
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+
+          # Readiness probe
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+
+          # Startup probe for slow starting containers
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+
+          # Volume mounts
+          volumeMounts:
+            - name: ray-tmp
+              mountPath: /tmp/ray
+            - name: logs
+              mountPath: /var/log/infrastructure
+
+      # Volumes
+      volumes:
+        - name: ray-tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+        - name: logs
+          emptyDir: {}
+
+      # Node affinity and anti-affinity
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - infrastructure-module
+                topologyKey: kubernetes.io/hostname
+
+      # Tolerations for specific node taints
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "infrastructure"
+          effect: "NoSchedule"
+
+      # Termination grace period
+      terminationGracePeriodSeconds: 60
+
+---
+# ServiceAccount for the Infrastructure Module
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: infrastructure-module
+  namespace: ai-platform
+  labels:
+    app: infrastructure-module
+
+---
+# Role for Infrastructure Module
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: infrastructure-module-role
+  namespace: ai-platform
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch"]
+
+---
+# RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: infrastructure-module-rolebinding
+  namespace: ai-platform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: infrastructure-module-role
+subjects:
+  - kind: ServiceAccount
+    name: infrastructure-module
+    namespace: ai-platform

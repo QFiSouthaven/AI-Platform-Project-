@@ -1,0 +1,110 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+venv
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# Testing
+tests/
+test/
+*_test.py
+test_*.py
+
+# Documentation
+docs/
+*.md
+!README.md
+LICENSE
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*
+.docker
+.dockerignore
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+.circleci
+
+# Build artifacts
+build/
+dist/
+*.egg-info
+
+# Local development
+.env
+.env.*
+*.env
+local_settings.py
+*.local
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# ML models (large files - should be pulled separately)
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.joblib
+*.model
+*.pt
+*.pth
+*.onnx
+models/
+checkpoints/
+
+# Node modules (if any)
+node_modules/
+npm-debug.log
+
+# Makefile (not needed in container)
+Makefile
+
+# Pre-commit
+.pre-commit-config.yaml
+
+# Data volumes
+data/
+volumes/

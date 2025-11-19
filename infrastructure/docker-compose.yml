@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  infrastructure:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: infrastructure-module
+    ports:
+      - "8006:8006"
+    environment:
+      - APP_ENV=development
+      - DEBUG=True
+      - RAY_ADDRESS=ray-head:6379
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - redis
+      - kafka
+      - ray-head
+    volumes:
+      - ./app:/app/app:ro
+      - ray-tmp:/tmp/ray
+    networks:
+      - ai-platform-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: infrastructure-nginx
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/upstream.conf:/etc/nginx/conf.d/upstream.conf:ro
+    depends_on:
+      - infrastructure
+    networks:
+      - ai-platform-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/nginx-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ray-head:
+    image: rayproject/ray:2.9.0-py39
+    container_name: ray-head
+    ports:
+      - "6379:6379"
+      - "8265:8265"
+    command: ray start --head --port=6379 --dashboard-host=0.0.0.0 --block
+    environment:
+      - RAY_DISABLE_DOCKER_CPU_WARNING=1
+    volumes:
+      - ray-tmp:/tmp/ray
+    networks:
+      - ai-platform-network
+    shm_size: '2gb'
+
+  ray-worker:
+    image: rayproject/ray:2.9.0-py39
+    command: ray start --address=ray-head:6379 --block
+    environment:
+      - RAY_DISABLE_DOCKER_CPU_WARNING=1
+    depends_on:
+      - ray-head
+    volumes:
+      - ray-tmp:/tmp/ray
+    networks:
+      - ai-platform-network
+    shm_size: '2gb'
+    deploy:
+      replicas: 2
+
+  redis:
+    image: redis:7-alpine
+    container_name: infrastructure-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - ai-platform-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: infrastructure-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: infrastructure-cluster-id
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - ai-platform-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  ai-platform-network:
+    driver: bridge
+    name: ai-platform-network
+
+volumes:
+  redis-data:
+  kafka-data:
+  ray-tmp:

@@ -1,0 +1,42 @@
+# FastAPI and server
+fastapi[all]==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Database
+motor==3.3.2
+pymongo==4.6.1
+
+# Pydantic
+pydantic==2.5.2
+pydantic-settings==2.1.0
+
+# Encryption
+cryptography==41.0.7
+
+# Async file operations
+aiofiles==23.2.1
+
+# Logging
+structlog==23.2.0
+python-json-logger==2.0.7
+
+# System monitoring
+psutil==5.9.7
+
+# HTTP client
+httpx==0.25.2
+
+# Kafka (optional)
+kafka-python==2.0.2
+
+# Redis (optional)
+redis==5.0.1
+
+# Deep learning frameworks (optional - install as needed)
+# torch>=2.0.0
+# tensorflow>=2.15.0
+# onnxruntime>=1.16.0
+
+# Utilities
+python-dateutil==2.8.2
