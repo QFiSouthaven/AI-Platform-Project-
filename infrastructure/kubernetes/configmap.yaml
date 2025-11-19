@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: infrastructure-config
+  namespace: ai-platform
+  labels:
+    app: infrastructure-module
+data:
+  # Application settings
+  APP_NAME: "infrastructure-module"
+  APP_VERSION: "1.0.0"
+  APP_ENV: "production"
+  DEBUG: "False"
+  LOG_LEVEL: "INFO"
+  HOST: "0.0.0.0"
+  PORT: "8006"
+
+  # Ray cluster settings
+  RAY_ADDRESS: "ray-head:6379"
+  RAY_NAMESPACE: "ai-platform"
+  RAY_DASHBOARD_HOST: "0.0.0.0"
+  RAY_DASHBOARD_PORT: "8265"
+  RAY_LOG_TO_DRIVER: "True"
+  RAY_INCLUDE_DASHBOARD: "True"
+
+  # Task settings
+  TASK_DEFAULT_TIMEOUT: "300"
+  TASK_MAX_RETRIES: "3"
+  TASK_RETRY_DELAY: "5"
+  TASK_QUEUE_MAX_SIZE: "10000"
+  TASK_RESULT_TTL: "3600"
+
+  # Worker settings
+  MIN_WORKERS: "2"
+  MAX_WORKERS: "10"
+  WORKERS_PER_NODE: "4"
+  WORKER_CPU_FRACTION: "0.25"
+  WORKER_MEMORY_MB: "1024"
+  WORKER_IDLE_TIMEOUT: "300"
+
+  # Auto-scaling settings
+  AUTOSCALE_ENABLED: "True"
+  AUTOSCALE_CHECK_INTERVAL: "30"
+  AUTOSCALE_COOLDOWN_PERIOD: "120"
+  AUTOSCALE_CPU_THRESHOLD_HIGH: "80"
+  AUTOSCALE_CPU_THRESHOLD_LOW: "30"
+  AUTOSCALE_MEMORY_THRESHOLD_HIGH: "85"
+  AUTOSCALE_MEMORY_THRESHOLD_LOW: "40"
+  AUTOSCALE_QUEUE_THRESHOLD: "100"
+  AUTOSCALE_SCALE_UP_INCREMENT: "2"
+  AUTOSCALE_SCALE_DOWN_INCREMENT: "1"
+
+  # Health monitoring settings
+  HEALTH_CHECK_INTERVAL: "15"
+  HEALTH_CHECK_TIMEOUT: "10"
+  HEALTH_FAILURE_THRESHOLD: "3"
+  HEALTH_RECOVERY_THRESHOLD: "2"
+
+  # Metrics settings
+  METRICS_ENABLED: "True"
+  METRICS_COLLECTION_INTERVAL: "10"
+  METRICS_RETENTION_PERIOD: "86400"
+  METRICS_AGGREGATION_INTERVAL: "60"
+
+  # Redis settings
+  REDIS_URL: "redis://redis:6379/0"
+  REDIS_PREFIX: "infrastructure:"
+  REDIS_TTL: "3600"
+
+  # Kafka settings
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  KAFKA_TOPIC_PREFIX: "infrastructure"
+  KAFKA_CONSUMER_GROUP: "infrastructure-consumers"
+
+  # NGINX settings
+  NGINX_UPSTREAM_NAME: "infrastructure_backend"
+  NGINX_MAX_CONNECTIONS: "1000"
+  NGINX_KEEPALIVE: "32"
+
+---
+# Secret for sensitive configuration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: infrastructure-secrets
+  namespace: ai-platform
+  labels:
+    app: infrastructure-module
+type: Opaque
+stringData:
+  # JWT settings (replace with actual secrets in production)
+  JWT_SECRET: "your-production-secret-key-here"
+  JWT_ALGORITHM: "HS256"
+
+  # API key
+  API_KEY_HEADER: "X-API-Key"
+
+---
+# Namespace (if not exists)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-platform
+  labels:
+    name: ai-platform
+    istio-injection: enabled

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  model-management:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: model-management
+    ports:
+      - "8005:8005"
+    environment:
+      - APP_ENV=development
+      - DEBUG=True
+      - MONGODB_URI=mongodb://mongodb:27017
+      - MONGODB_DB_NAME=model_management
+      - REDIS_URL=redis://redis:6379/0
+      - MODEL_STORAGE_PATH=/data/models
+      - PLUGIN_STORAGE_PATH=/data/plugins
+      - ENABLE_ENCRYPTION=True
+    volumes:
+      - model-data:/data/models
+      - plugin-data:/data/plugins
+      - ./secrets:/secrets:ro
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - model-management-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mongodb:
+    image: mongo:6.0
+    container_name: model-management-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - model-management-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: model-management-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - model-management-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  model-data:
+  plugin-data:
+  mongodb-data:
+  redis-data:
+
+networks:
+  model-management-network:
+    driver: bridge

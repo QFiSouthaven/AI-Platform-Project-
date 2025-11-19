@@ -1,0 +1,50 @@
+# Infrastructure Module - Python Dependencies
+
+# Web Framework
+fastapi[all]==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Pydantic for settings and validation
+pydantic==2.5.2
+pydantic-settings==2.1.0
+
+# Ray for distributed computing
+ray[default]==2.9.0
+
+# Async support
+httpx==0.25.2
+aiohttp==3.9.1
+aiofiles==23.2.1
+
+# Redis for caching and distributed state
+redis==5.0.1
+hiredis==2.3.2
+
+# Kafka for message queue
+kafka-python==2.0.2
+aiokafka==0.10.0
+
+# Database drivers
+asyncpg==0.29.0
+
+# Logging
+structlog==23.2.0
+python-json-logger==2.0.7
+
+# Monitoring and metrics
+prometheus-client==0.19.0
+
+# Utilities
+python-dotenv==1.0.0
+tenacity==8.2.3
+orjson==3.9.10
+
+# Security
+PyJWT==2.8.0
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# Date/Time handling
+python-dateutil==2.8.2
+pytz==2023.3

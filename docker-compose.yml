@@ -1,0 +1,406 @@
+# AI Platform - Docker Compose Configuration
+# Main orchestration file for all 6 modules and dependencies
+# Compatible with Windows 11, macOS, and Linux
+#
+# Usage:
+#   docker-compose up -d              # Start all services
+#   docker-compose up -d postgres     # Start only postgres
+#   docker-compose logs -f            # View logs
+#   docker-compose down -v            # Stop and remove volumes
+#
+# Windows Users:
+#   - Ensure Docker Desktop is running
+#   - Use PowerShell or Command Prompt
+#   - Named volumes are used for better Windows performance
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # Infrastructure Services
+  # =============================================================================
+
+  # PostgreSQL - Used by user-gateway and workflow-orchestration
+  postgres:
+    image: postgres:14
+    container_name: ai-platform-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aiplatform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aiplatform_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-aiplatform}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-postgres.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiplatform} -d ${POSTGRES_DB:-aiplatform}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ai-platform-network
+
+  # MongoDB - Used by model-management
+  mongodb:
+    image: mongo:6
+    container_name: ai-platform-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-aiplatform}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-aiplatform_secret}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-model_management}
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ai-platform-network
+
+  # Redis - Used by data-integration and caching
+  redis:
+    image: redis:7
+    container_name: ai-platform-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-aiplatform_secret}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-aiplatform_secret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ai-platform-network
+
+  # Zookeeper - Required by Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: ai-platform-zookeeper
+    restart: unless-stopped
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ai-platform-network
+
+  # Kafka - Event messaging for all modules
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: ai-platform-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - ai-platform-network
+
+  # =============================================================================
+  # Application Modules
+  # =============================================================================
+
+  # Module 1: User Gateway
+  user-gateway:
+    build:
+      context: ./user-gateway
+      dockerfile: Dockerfile
+    container_name: ai-platform-user-gateway
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+    environment:
+      APP_NAME: user-gateway
+      APP_ENV: ${APP_ENV:-development}
+      DEBUG: ${DEBUG:-True}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-aiplatform}:${POSTGRES_PASSWORD:-aiplatform_secret}@postgres:5432/${POSTGRES_DB:-aiplatform}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aiplatform_secret}@redis:6379/0
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRATION_MINUTES: 30
+      OAUTH2_CLIENT_ID: ${OAUTH2_CLIENT_ID:-}
+      OAUTH2_CLIENT_SECRET: ${OAUTH2_CLIENT_SECRET:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ai-platform-network
+
+  # Module 2: Workflow Orchestration
+  workflow-orchestration:
+    build:
+      context: ./workflow-orchestration
+      dockerfile: Dockerfile
+    container_name: ai-platform-workflow-orchestration
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8002:8000"
+    environment:
+      APP_NAME: workflow-orchestration
+      APP_ENV: ${APP_ENV:-development}
+      DEBUG: ${DEBUG:-True}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-aiplatform}:${POSTGRES_PASSWORD:-aiplatform_secret}@postgres:5432/${POSTGRES_DB:-aiplatform}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aiplatform_secret}@redis:6379/1
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      MAX_CONCURRENT_WORKFLOWS: ${MAX_CONCURRENT_WORKFLOWS:-10}
+      TASK_TIMEOUT_SECONDS: ${TASK_TIMEOUT_SECONDS:-3600}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ai-platform-network
+
+  # Module 3: Core Processing
+  core-processing:
+    build:
+      context: ./core-processing
+      dockerfile: Dockerfile
+    container_name: ai-platform-core-processing
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8003:8000"
+    environment:
+      APP_NAME: core-processing
+      APP_ENV: ${APP_ENV:-development}
+      DEBUG: ${DEBUG:-True}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aiplatform_secret}@redis:6379/2
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      HF_API_TOKEN: ${HF_API_TOKEN:-}
+      MODEL_NAME: ${MODEL_NAME:-bigcode/starcoder}
+      USE_GPU: ${USE_GPU:-False}
+      MAX_SEQUENCE_LENGTH: ${MAX_SEQUENCE_LENGTH:-2048}
+      TEMPERATURE: ${TEMPERATURE:-0.7}
+      MODEL_CACHE_DIR: /app/model_cache
+    volumes:
+      - model_cache:/app/model_cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ai-platform-network
+    # Uncomment below for GPU support (requires nvidia-docker)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Module 4: Data Integration
+  data-integration:
+    build:
+      context: ./data-integration
+      dockerfile: Dockerfile
+    container_name: ai-platform-data-integration
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8004:8000"
+    environment:
+      APP_NAME: data-integration
+      APP_ENV: ${APP_ENV:-development}
+      DEBUG: ${DEBUG:-True}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aiplatform_secret}@redis:6379/3
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-3600}
+      MAX_CACHE_SIZE_MB: ${MAX_CACHE_SIZE_MB:-512}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ai-platform-network
+
+  # Module 5: Model Management
+  model-management:
+    build:
+      context: ./model-management
+      dockerfile: Dockerfile
+    container_name: ai-platform-model-management
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8005:8000"
+    environment:
+      APP_NAME: model-management
+      APP_ENV: ${APP_ENV:-development}
+      DEBUG: ${DEBUG:-True}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      MONGODB_URI: mongodb://${MONGO_USER:-aiplatform}:${MONGO_PASSWORD:-aiplatform_secret}@mongodb:27017/${MONGO_DB:-model_management}?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aiplatform_secret}@redis:6379/4
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      MODEL_STORAGE_PATH: /app/models
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-your-encryption-key-change-in-production}
+    volumes:
+      - model_storage:/app/models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ai-platform-network
+
+  # Module 6: Infrastructure
+  infrastructure:
+    build:
+      context: ./infrastructure
+      dockerfile: Dockerfile
+    container_name: ai-platform-infrastructure
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8006:8000"
+    environment:
+      APP_NAME: infrastructure
+      APP_ENV: ${APP_ENV:-development}
+      DEBUG: ${DEBUG:-True}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-aiplatform_secret}@redis:6379/5
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      RAY_HEAD_ADDRESS: ${RAY_HEAD_ADDRESS:-auto}
+      MAX_WORKERS: ${MAX_WORKERS:-4}
+      WORKER_CPU: ${WORKER_CPU:-1}
+      WORKER_MEMORY_GB: ${WORKER_MEMORY_GB:-2}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ai-platform-network
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  ai-platform-network:
+    driver: bridge
+    name: ai-platform-network
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# =============================================================================
+# Volumes
+# Named volumes for better Windows performance
+# =============================================================================
+volumes:
+  postgres_data:
+    name: ai-platform-postgres-data
+  mongodb_data:
+    name: ai-platform-mongodb-data
+  mongodb_config:
+    name: ai-platform-mongodb-config
+  redis_data:
+    name: ai-platform-redis-data
+  zookeeper_data:
+    name: ai-platform-zookeeper-data
+  zookeeper_log:
+    name: ai-platform-zookeeper-log
+  kafka_data:
+    name: ai-platform-kafka-data
+  model_cache:
+    name: ai-platform-model-cache
+  model_storage:
+    name: ai-platform-model-storage
