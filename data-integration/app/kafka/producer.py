@@ -6,6 +6,7 @@ Publishes processed events and notifications to Kafka topics.
 
 import asyncio
 import json
+import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -13,6 +14,10 @@ from uuid import UUID
 import structlog
 from aiokafka import AIOKafkaProducer
 from aiokafka.errors import KafkaError
+
+# Windows-specific: Ensure proper event loop policy
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from app.config import settings
 from app.models.events import EventMessage

@@ -4,6 +4,7 @@ Main FastAPI application for Model Management module.
 Entry point for the Model Management service with plugin loading on startup.
 """
 
+import asyncio
 import logging
 import sys
 from contextlib import asynccontextmanager
@@ -11,6 +12,10 @@ from datetime import datetime
 from typing import Any, Dict
 
 import structlog
+
+# Windows event loop policy for asyncio compatibility
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse

@@ -5,10 +5,15 @@ Provides connection pooling and basic Redis operations.
 """
 
 import asyncio
+import sys
 from typing import Any, List, Optional, Union
 
 import redis.asyncio as redis
 import structlog
+
+# Windows-specific: Ensure proper event loop policy
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from app.config import settings
 

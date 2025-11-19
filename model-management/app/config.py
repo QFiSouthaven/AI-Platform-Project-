@@ -4,11 +4,40 @@ Configuration settings for Model Management module.
 Uses Pydantic settings for environment variable management.
 """
 
+import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional
 
 from pydantic_settings import BaseSettings
+
+
+def get_default_storage_path(subdir: str) -> str:
+    """Get platform-appropriate default storage path."""
+    if sys.platform == 'win32':
+        # Use user's local app data on Windows
+        base = os.environ.get('LOCALAPPDATA', os.path.expanduser('~'))
+        return str(Path(base) / 'model-management' / subdir)
+    else:
+        return f"/data/{subdir}"
+
+
+def get_default_temp_path() -> str:
+    """Get platform-appropriate default temp path."""
+    if sys.platform == 'win32':
+        return str(Path(os.environ.get('TEMP', os.path.expanduser('~'))) / 'model-management')
+    else:
+        return "/tmp/model-management"
+
+
+def get_default_encryption_key_path() -> str:
+    """Get platform-appropriate default encryption key path."""
+    if sys.platform == 'win32':
+        base = os.environ.get('LOCALAPPDATA', os.path.expanduser('~'))
+        return str(Path(base) / 'model-management' / 'secrets' / 'encryption.key')
+    else:
+        return "/secrets/encryption.key"
 
 
 class Settings(BaseSettings):
@@ -32,16 +61,16 @@ class Settings(BaseSettings):
     MONGODB_MIN_POOL_SIZE: int = 10
     MONGODB_MAX_POOL_SIZE: int = 100
 
-    # Storage
-    MODEL_STORAGE_PATH: str = "/data/models"
-    PLUGIN_STORAGE_PATH: str = "/data/plugins"
-    TEMP_STORAGE_PATH: str = "/tmp/model-management"
+    # Storage - Use platform-appropriate defaults
+    MODEL_STORAGE_PATH: str = get_default_storage_path("models")
+    PLUGIN_STORAGE_PATH: str = get_default_storage_path("plugins")
+    TEMP_STORAGE_PATH: str = get_default_temp_path()
     MAX_MODEL_SIZE_MB: int = 10000  # 10GB
     ALLOWED_MODEL_EXTENSIONS: List[str] = [".pt", ".pth", ".h5", ".onnx", ".bin", ".safetensors", ".pkl"]
 
     # Encryption
     ENCRYPTION_KEY: Optional[str] = None
-    ENCRYPTION_KEY_PATH: str = "/secrets/encryption.key"
+    ENCRYPTION_KEY_PATH: str = get_default_encryption_key_path()
     ENABLE_ENCRYPTION: bool = True
     KEY_ROTATION_DAYS: int = 90
 

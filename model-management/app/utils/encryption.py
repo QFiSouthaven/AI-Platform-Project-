@@ -104,8 +104,24 @@ class EncryptionService:
         async with aiofiles.open(settings.ENCRYPTION_KEY_PATH, "wb") as f:
             await f.write(b"\n".join(self._keys))
 
-        # Secure the key file
-        os.chmod(settings.ENCRYPTION_KEY_PATH, 0o600)
+        # Secure the key file (platform-specific)
+        import sys
+        if sys.platform == 'win32':
+            # On Windows, use icacls to restrict access or skip chmod
+            # Windows file permissions are handled differently
+            try:
+                import subprocess
+                # Remove inherited permissions and set owner only
+                subprocess.run(
+                    ['icacls', str(key_path), '/inheritance:r', '/grant:r', f'{os.environ.get("USERNAME", "User")}:F'],
+                    capture_output=True,
+                    check=False
+                )
+            except Exception:
+                # If icacls fails, log warning but continue
+                logger.warning("Could not set restrictive permissions on encryption key file")
+        else:
+            os.chmod(settings.ENCRYPTION_KEY_PATH, 0o600)
 
     async def encrypt_file(self, input_path: str, output_path: Optional[str] = None) -> str:
         """

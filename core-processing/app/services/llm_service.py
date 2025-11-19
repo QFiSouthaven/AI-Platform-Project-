@@ -6,7 +6,10 @@ Handles model loading, GPU memory management, and text generation.
 
 import asyncio
 import gc
+import os
+import sys
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import structlog
@@ -103,13 +106,18 @@ class LLMService:
                     self.device = "cpu"
                     logger.info("Using CPU")
 
+                # Ensure cache directory exists (cross-platform)
+                cache_dir = Path(settings.MODEL_CACHE_DIR)
+                cache_dir.mkdir(parents=True, exist_ok=True)
+                cache_dir_str = str(cache_dir)
+
                 # Load tokenizer
                 self.tokenizer = await asyncio.to_thread(
                     AutoTokenizer.from_pretrained,
                     model_name,
                     trust_remote_code=True,
                     token=settings.HF_API_TOKEN,
-                    cache_dir=settings.MODEL_CACHE_DIR
+                    cache_dir=cache_dir_str
                 )
 
                 if self.tokenizer.pad_token is None:
@@ -136,7 +144,7 @@ class LLMService:
                 model_kwargs = {
                     "trust_remote_code": True,
                     "token": settings.HF_API_TOKEN,
-                    "cache_dir": settings.MODEL_CACHE_DIR,
+                    "cache_dir": cache_dir_str,
                     "torch_dtype": torch_dtype,
                 }
 

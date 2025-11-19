@@ -3,14 +3,20 @@ Infrastructure Module - FastAPI Application Entry Point
 
 This module initializes the FastAPI application with Ray cluster integration,
 providing distributed task execution and resource management capabilities.
+Windows 11 compatible implementation.
 """
 
 import asyncio
+import sys
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any
 
 import structlog
+
+# Windows event loop policy for asyncio compatibility
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse

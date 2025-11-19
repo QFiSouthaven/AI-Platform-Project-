@@ -6,12 +6,17 @@ Consumes events from multiple Kafka topics and processes them.
 
 import asyncio
 import json
+import sys
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 import structlog
 from aiokafka import AIOKafkaConsumer
 from aiokafka.errors import KafkaError
+
+# Windows-specific: Ensure proper event loop policy
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from app.config import settings
 from app.models.events import EventMessage, EventMetadata

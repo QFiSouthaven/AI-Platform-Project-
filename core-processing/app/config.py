@@ -4,10 +4,21 @@ Configuration settings for Core Processing module.
 Uses Pydantic settings for environment variable management and validation.
 """
 
+import sys
 from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 from pydantic_settings import BaseSettings
+
+
+def get_default_cache_dir() -> str:
+    """Get platform-appropriate default cache directory."""
+    if sys.platform == 'win32':
+        # Use Windows temp directory or user's local app data
+        import os
+        return os.path.join(os.environ.get('LOCALAPPDATA', os.environ.get('TEMP', 'C:\\Temp')), 'model_cache')
+    return '/tmp/model_cache'
 
 
 class Settings(BaseSettings):
@@ -34,7 +45,7 @@ class Settings(BaseSettings):
     NUM_RETURN_SEQUENCES: int = 1
 
     # Model Loading
-    MODEL_CACHE_DIR: str = "/tmp/model_cache"
+    MODEL_CACHE_DIR: str = get_default_cache_dir()
     LOAD_IN_8BIT: bool = False
     LOAD_IN_4BIT: bool = False
     DEVICE_MAP: str = "auto"

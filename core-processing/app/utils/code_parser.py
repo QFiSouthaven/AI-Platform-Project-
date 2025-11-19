@@ -3,7 +3,10 @@ Code parsing utilities for analyzing source code.
 """
 
 import ast
+import os
 import re
+import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import structlog

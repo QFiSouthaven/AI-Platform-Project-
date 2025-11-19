@@ -5,9 +5,15 @@ Provides event-driven communication, caching, and application assembly
 capabilities for the AI Platform.
 """
 
+import sys
+
+# Windows-specific event loop policy for asyncio compatibility
+if sys.platform == 'win32':
+    import asyncio
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 import asyncio
 import logging
-import sys
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any, Dict

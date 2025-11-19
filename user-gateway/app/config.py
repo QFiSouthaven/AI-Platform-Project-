@@ -2,12 +2,22 @@
 Configuration module for User Gateway.
 
 Loads environment variables and provides settings for the application.
+Windows 11 compatible with pathlib for cross-platform path handling.
 """
 
+import sys
 from functools import lru_cache
+from pathlib import Path
 from typing import List, Optional
 
 from pydantic_settings import BaseSettings
+
+# Base directory of the module
+BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = BASE_DIR.parent
+
+# Platform detection
+IS_WINDOWS = sys.platform == "win32"
 
 
 class Settings(BaseSettings):
@@ -61,12 +71,50 @@ class Settings(BaseSettings):
     # OAuth2
     OAUTH2_TOKEN_URL: str = "/api/v1/auth/login"
 
+    # File paths (use pathlib for Windows compatibility)
+    LOG_DIR: Optional[str] = None
+    UPLOAD_DIR: Optional[str] = None
+    TEMP_DIR: Optional[str] = None
+
     class Config:
         """Pydantic configuration."""
 
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
+
+    @property
+    def log_path(self) -> Path:
+        """Get log directory path (Windows compatible)."""
+        if self.LOG_DIR:
+            return Path(self.LOG_DIR)
+        return BASE_DIR / "logs"
+
+    @property
+    def upload_path(self) -> Path:
+        """Get upload directory path (Windows compatible)."""
+        if self.UPLOAD_DIR:
+            return Path(self.UPLOAD_DIR)
+        return BASE_DIR / "uploads"
+
+    @property
+    def temp_path(self) -> Path:
+        """Get temp directory path (Windows compatible)."""
+        if self.TEMP_DIR:
+            return Path(self.TEMP_DIR)
+        if IS_WINDOWS:
+            import tempfile
+            return Path(tempfile.gettempdir()) / "user-gateway"
+        return Path("/tmp/user-gateway")
+
+    def get_database_url_sync(self) -> str:
+        """
+        Get synchronous database URL for tools like Alembic.
+
+        Converts asyncpg URL to psycopg2 for sync operations.
+        Handles Windows-specific path considerations.
+        """
+        return self.DATABASE_URL.replace("+asyncpg", "")
 
 
 @lru_cache()

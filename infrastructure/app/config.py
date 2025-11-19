@@ -3,11 +3,23 @@ Infrastructure Module - Configuration Management
 
 This module defines all configuration settings using Pydantic Settings
 for type validation and environment variable loading.
+Windows 11 compatible implementation.
 """
 
+import os
+import sys
+from pathlib import Path
 from typing import List, Optional
 from pydantic_settings import BaseSettings
 from pydantic import Field
+
+
+def get_default_ray_temp_dir() -> str:
+    """Get platform-appropriate default Ray temp directory."""
+    if sys.platform == 'win32':
+        return str(Path(os.environ.get('TEMP', os.path.expanduser('~'))) / 'ray')
+    else:
+        return "/tmp/ray"
 
 
 class Settings(BaseSettings):
@@ -33,7 +45,7 @@ class Settings(BaseSettings):
     RAY_OBJECT_STORE_MEMORY: Optional[int] = None
     RAY_DASHBOARD_HOST: str = "0.0.0.0"
     RAY_DASHBOARD_PORT: int = 8265
-    RAY_TEMP_DIR: str = "/tmp/ray"
+    RAY_TEMP_DIR: str = get_default_ray_temp_dir()
     RAY_LOG_TO_DRIVER: bool = True
     RAY_INCLUDE_DASHBOARD: bool = True
 

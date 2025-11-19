@@ -1,0 +1,245 @@
+# =============================================================================
+# AI Platform - Windows 11 Docker Compose Override
+# =============================================================================
+# This file contains Windows 11-specific optimizations for Docker Desktop.
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.windows.yml up -d
+#   Or use: scripts/docker-windows.ps1
+#
+# Windows 11 Optimizations:
+#   - Extended health check timeouts for slower Docker on Windows
+#   - Lower resource limits suitable for development machines
+#   - Disabled GPU support (Windows GPU passthrough requires special setup)
+#   - Optimized Kafka settings for Windows networking
+#
+# Prerequisites:
+#   - Docker Desktop for Windows with WSL2 backend enabled
+#   - Windows 11 (also works on Windows 10 20H2+)
+#   - At least 16GB RAM recommended
+#   - SSD storage for better volume performance
+#
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # Infrastructure Services - Windows Optimizations
+  # =============================================================================
+
+  # PostgreSQL - Extended timeouts for Windows
+  postgres:
+    healthcheck:
+      # Windows Docker may take longer to start services
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 45s
+    # Lower resource limits for Windows development
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # MongoDB - Extended timeouts for Windows
+  mongodb:
+    healthcheck:
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Redis - Extended timeouts for Windows
+  redis:
+    healthcheck:
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  # Zookeeper - Extended timeouts for Windows
+  zookeeper:
+    healthcheck:
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # Kafka - Windows-optimized settings
+  kafka:
+    environment:
+      # Kafka needs explicit broker ID
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      # Windows-specific: Lower replication for single-node
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      # Windows-specific: Reduce initial rebalance delay
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      # Windows-specific: Lower partition count for development
+      KAFKA_NUM_PARTITIONS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      # Windows-specific: Reduce log retention for development
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+    healthcheck:
+      # Extended timeout for Kafka on Windows (can be slow to start)
+      interval: 20s
+      timeout: 15s
+      retries: 10
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # =============================================================================
+  # Application Modules - Windows Development Settings
+  # =============================================================================
+
+  # Module 1: User Gateway - Windows optimizations
+  user-gateway:
+    healthcheck:
+      interval: 45s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # Module 2: Workflow Orchestration - Windows optimizations
+  workflow-orchestration:
+    healthcheck:
+      interval: 45s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # Module 3: Core Processing - Windows optimizations (NO GPU)
+  core-processing:
+    environment:
+      # Disable GPU on Windows (requires special WSL2 GPU setup)
+      USE_GPU: "False"
+      # Use smaller model for Windows development
+      MODEL_NAME: ${DEV_MODEL_NAME:-microsoft/codebert-base}
+      # Reduce sequence length for memory constraints
+      MAX_SEQUENCE_LENGTH: 1024
+    healthcheck:
+      interval: 45s
+      timeout: 15s
+      retries: 5
+      # Extended start period for model loading
+      start_period: 120s
+    # Lower resource limits for Windows (no GPU)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # Module 4: Data Integration - Windows optimizations
+  data-integration:
+    healthcheck:
+      interval: 45s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # Module 5: Model Management - Windows optimizations
+  model-management:
+    healthcheck:
+      interval: 45s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+
+  # Module 6: Infrastructure - Windows optimizations
+  infrastructure:
+    environment:
+      # Reduce Ray workers for Windows
+      MAX_WORKERS: 2
+      WORKER_CPU: 0.5
+      WORKER_MEMORY_GB: 1
+    healthcheck:
+      interval: 45s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 512M

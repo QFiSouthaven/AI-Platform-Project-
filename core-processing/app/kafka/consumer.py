@@ -4,11 +4,16 @@ Kafka consumer for processing tasks from the message queue.
 
 import asyncio
 import json
+import sys
 from datetime import datetime
 from typing import Any, Dict, Optional
 
 import structlog
 from aiokafka import AIOKafkaConsumer
+
+# Windows-specific: Ensure proper event loop policy
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from app.config import settings
 from app.models.llm_models import (

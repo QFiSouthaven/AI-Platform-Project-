@@ -2,24 +2,44 @@
 Database configuration and session management.
 
 Uses SQLAlchemy async with PostgreSQL for database operations.
+Windows 11 compatible with proper connection handling.
 """
 
+import sys
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import NullPool, QueuePool
 
-from app.config import settings
+from app.config import settings, IS_WINDOWS
 
-# Create async engine
+def get_engine_kwargs():
+    """
+    Get engine configuration kwargs.
+
+    Handles Windows-specific configurations for better compatibility.
+    """
+    kwargs = {
+        "echo": settings.DEBUG,
+        "pool_size": settings.DATABASE_POOL_SIZE,
+        "max_overflow": settings.DATABASE_MAX_OVERFLOW,
+        "pool_timeout": settings.DATABASE_POOL_TIMEOUT,
+        "pool_pre_ping": True,
+    }
+
+    # Windows-specific: Use shorter pool recycle time to handle connection drops
+    if IS_WINDOWS:
+        kwargs["pool_recycle"] = 1800  # 30 minutes
+        kwargs["pool_use_lifo"] = True  # Use LIFO to reduce stale connections
+
+    return kwargs
+
+
+# Create async engine with platform-specific settings
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
-    pool_timeout=settings.DATABASE_POOL_TIMEOUT,
-    pool_pre_ping=True,
+    **get_engine_kwargs()
 )
 
 # Create session factory

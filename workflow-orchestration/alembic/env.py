@@ -1,9 +1,12 @@
 """
 Alembic environment configuration for database migrations.
+Windows 11 compatible with proper path and async handling.
 """
 
 import asyncio
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
@@ -14,7 +17,7 @@ from alembic import context
 # Import models to ensure they are registered with Base.metadata
 from app.database import Base
 from app.models import Workflow, WorkflowExecution, Task, TaskExecution
-from app.config import settings
+from app.config import settings, IS_WINDOWS
 
 # Alembic Config object
 config = context.config
@@ -94,7 +97,16 @@ async def run_async_migrations() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
+    """
+    Run migrations in 'online' mode.
+
+    Handles Windows-specific event loop considerations.
+    """
+    # Windows-specific: Use ProactorEventLoop for better subprocess support
+    if IS_WINDOWS:
+        if sys.version_info >= (3, 8):
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     asyncio.run(run_async_migrations())
 
 

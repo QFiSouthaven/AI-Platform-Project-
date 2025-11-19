@@ -2,12 +2,14 @@
 File storage service for model and plugin files.
 
 Handles file operations, checksums, and storage management.
+Windows compatible implementation using pathlib.Path.
 """
 
 import hashlib
 import logging
 import os
 import shutil
+import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -21,6 +23,11 @@ from app.config import get_settings
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
+
+
+def normalize_path(path: str) -> str:
+    """Normalize path for cross-platform compatibility."""
+    return str(Path(path).resolve())
 
 
 class StorageService:
@@ -299,7 +306,7 @@ class StorageService:
             model_name: Optional filter by model name
 
         Returns:
-            List of file paths
+            List of file paths (normalized for platform)
         """
         if model_name:
             search_path = self.model_path / model_name
@@ -312,7 +319,9 @@ class StorageService:
         files = []
         for root, _, filenames in os.walk(search_path):
             for filename in filenames:
-                files.append(os.path.join(root, filename))
+                # Use Path for cross-platform path handling
+                file_path = Path(root) / filename
+                files.append(str(file_path))
 
         return files
 
@@ -346,8 +355,13 @@ class StorageService:
         if path.exists():
             for dirpath, _, filenames in os.walk(path):
                 for filename in filenames:
-                    filepath = os.path.join(dirpath, filename)
-                    total_size += os.path.getsize(filepath)
+                    # Use Path for cross-platform compatibility
+                    filepath = Path(dirpath) / filename
+                    try:
+                        total_size += filepath.stat().st_size
+                    except (OSError, IOError):
+                        # Skip files that can't be accessed
+                        pass
         return total_size
 
     async def create_temp_file(self, content: bytes, extension: str = "") -> str:

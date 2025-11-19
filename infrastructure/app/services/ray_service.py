@@ -3,11 +3,15 @@ Ray Service - Distributed Computing Management
 
 This service manages the Ray cluster connection, task submission,
 and distributed computing operations.
+Windows 11 compatible implementation.
 """
 
 import asyncio
+import os
+import sys
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from enum import Enum
 
@@ -76,32 +80,67 @@ class RayService:
     async def initialize(self) -> None:
         """
         Initialize connection to Ray cluster.
+        Windows compatible initialization.
         """
         try:
-            # Configure Ray initialization options
-            init_kwargs = {
-                "address": settings.RAY_ADDRESS if settings.RAY_ADDRESS != "auto" else None,
-                "namespace": settings.RAY_NAMESPACE,
-                "log_to_driver": settings.RAY_LOG_TO_DRIVER,
-                "include_dashboard": settings.RAY_INCLUDE_DASHBOARD,
-                "dashboard_host": settings.RAY_DASHBOARD_HOST,
-                "dashboard_port": settings.RAY_DASHBOARD_PORT,
-                "_temp_dir": settings.RAY_TEMP_DIR,
-            }
+            # Check if Ray is already initialized
+            if ray.is_initialized():
+                self._initialized = True
+                self._cluster_info = await self._get_cluster_info()
+                logger.info("Ray already initialized", cluster_info=self._cluster_info)
+                return
 
-            # Add resource limits if specified
-            if settings.RAY_NUM_CPUS:
-                init_kwargs["num_cpus"] = settings.RAY_NUM_CPUS
-            if settings.RAY_NUM_GPUS:
-                init_kwargs["num_gpus"] = settings.RAY_NUM_GPUS
-            if settings.RAY_OBJECT_STORE_MEMORY:
-                init_kwargs["object_store_memory"] = settings.RAY_OBJECT_STORE_MEMORY
+            # Platform-specific Ray initialization
+            if sys.platform == 'win32':
+                # Windows-specific initialization
+                # Ray has limited support on Windows, use local mode
+                logger.info("Initializing Ray in Windows mode")
 
-            # Filter out None values
-            init_kwargs = {k: v for k, v in init_kwargs.items() if v is not None}
+                # Create temp directory if it doesn't exist
+                temp_dir = Path(settings.RAY_TEMP_DIR)
+                temp_dir.mkdir(parents=True, exist_ok=True)
 
-            # Initialize Ray
-            if not ray.is_initialized():
+                init_kwargs = {
+                    "num_cpus": settings.RAY_NUM_CPUS or 4,  # Default to 4 CPUs on Windows
+                    "ignore_reinit_error": True,
+                    "include_dashboard": False,  # Dashboard has issues on Windows
+                    "logging_level": "warning",
+                    "_temp_dir": str(temp_dir),
+                }
+
+                # Add GPU support if available
+                if settings.RAY_NUM_GPUS:
+                    init_kwargs["num_gpus"] = settings.RAY_NUM_GPUS
+
+                # Add memory limit if specified
+                if settings.RAY_OBJECT_STORE_MEMORY:
+                    init_kwargs["object_store_memory"] = settings.RAY_OBJECT_STORE_MEMORY
+
+                ray.init(**init_kwargs)
+
+            else:
+                # Linux/macOS initialization
+                init_kwargs = {
+                    "address": settings.RAY_ADDRESS if settings.RAY_ADDRESS != "auto" else None,
+                    "namespace": settings.RAY_NAMESPACE,
+                    "log_to_driver": settings.RAY_LOG_TO_DRIVER,
+                    "include_dashboard": settings.RAY_INCLUDE_DASHBOARD,
+                    "dashboard_host": settings.RAY_DASHBOARD_HOST,
+                    "dashboard_port": settings.RAY_DASHBOARD_PORT,
+                    "_temp_dir": settings.RAY_TEMP_DIR,
+                }
+
+                # Add resource limits if specified
+                if settings.RAY_NUM_CPUS:
+                    init_kwargs["num_cpus"] = settings.RAY_NUM_CPUS
+                if settings.RAY_NUM_GPUS:
+                    init_kwargs["num_gpus"] = settings.RAY_NUM_GPUS
+                if settings.RAY_OBJECT_STORE_MEMORY:
+                    init_kwargs["object_store_memory"] = settings.RAY_OBJECT_STORE_MEMORY
+
+                # Filter out None values
+                init_kwargs = {k: v for k, v in init_kwargs.items() if v is not None}
+
                 ray.init(**init_kwargs)
 
             self._initialized = True
@@ -109,7 +148,8 @@ class RayService:
 
             logger.info(
                 "Ray cluster initialized",
-                cluster_info=self._cluster_info
+                cluster_info=self._cluster_info,
+                platform=sys.platform
             )
 
         except Exception as e:

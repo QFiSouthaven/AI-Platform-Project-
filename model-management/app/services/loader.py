@@ -2,12 +2,15 @@
 Dynamic model loading service.
 
 Handles loading AI models into memory for inference.
+Windows compatible implementation.
 """
 
 import gc
 import logging
+import sys
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -20,6 +23,11 @@ from app.utils.encryption import get_encryption_service
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
+
+
+def normalize_model_path(file_path: str) -> str:
+    """Normalize model file path for cross-platform compatibility."""
+    return str(Path(file_path).resolve())
 
 
 class ModelLoader:
@@ -191,13 +199,17 @@ class ModelLoader:
         try:
             import torch
 
+            # Normalize path for Windows compatibility
+            normalized_path = normalize_model_path(file_path)
+
             # Determine device
             if device.startswith("cuda") and not torch.cuda.is_available():
                 logger.warning("CUDA not available, falling back to CPU")
                 device = "cpu"
 
-            # Load model
-            model = torch.load(file_path, map_location=device)
+            # Load model with weights_only=False for compatibility (Python 3.9+)
+            # On Windows, ensure proper path handling
+            model = torch.load(normalized_path, map_location=device, weights_only=False)
 
             # Set data type if specified
             if dtype and hasattr(model, "to"):
@@ -224,12 +236,15 @@ class ModelLoader:
         try:
             import tensorflow as tf
 
+            # Normalize path for Windows compatibility
+            normalized_path = normalize_model_path(file_path)
+
             # Configure device
             if device == "cpu":
                 with tf.device("/CPU:0"):
-                    model = tf.keras.models.load_model(file_path)
+                    model = tf.keras.models.load_model(normalized_path)
             else:
-                model = tf.keras.models.load_model(file_path)
+                model = tf.keras.models.load_model(normalized_path)
 
             return model
 
@@ -241,13 +256,16 @@ class ModelLoader:
         try:
             import onnxruntime as ort
 
+            # Normalize path for Windows compatibility
+            normalized_path = normalize_model_path(file_path)
+
             # Configure providers based on device
             if device.startswith("cuda"):
                 providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
             else:
                 providers = ["CPUExecutionProvider"]
 
-            session = ort.InferenceSession(file_path, providers=providers)
+            session = ort.InferenceSession(normalized_path, providers=providers)
             return session
 
         except ImportError:
@@ -257,7 +275,10 @@ class ModelLoader:
         """Load a pickle model."""
         import pickle
 
-        with open(file_path, "rb") as f:
+        # Normalize path for Windows compatibility
+        normalized_path = normalize_model_path(file_path)
+
+        with open(normalized_path, "rb") as f:
             model = pickle.load(f)
 
         return model

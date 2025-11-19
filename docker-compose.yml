@@ -8,10 +8,17 @@
 #   docker-compose logs -f            # View logs
 #   docker-compose down -v            # Stop and remove volumes
 #
-# Windows Users:
-#   - Ensure Docker Desktop is running
+# Windows 11 Users:
+#   - Ensure Docker Desktop is running with WSL2 backend
 #   - Use PowerShell or Command Prompt
 #   - Named volumes are used for better Windows performance
+#   - For Windows-specific optimizations, use:
+#     docker-compose -f docker-compose.yml -f docker-compose.windows.yml up -d
+#   - Or use the scripts/docker-windows.ps1 script
+#
+# Environment Variables for Windows:
+#   - Set COMPOSE_CONVERT_WINDOWS_PATHS=1 for path conversion
+#   - Use .env.docker.windows for Windows-specific settings
 
 version: '3.8'
 
@@ -41,6 +48,15 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    # Resource limits - adjust for production
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     networks:
       - ai-platform-network
 
@@ -64,6 +80,15 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    # Resource limits - adjust for production
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     networks:
       - ai-platform-network
 
@@ -83,6 +108,15 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    # Resource limits - adjust for production
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     networks:
       - ai-platform-network
 
@@ -107,6 +141,15 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    # Resource limits - adjust for production
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     networks:
       - ai-platform-network
 
@@ -141,6 +184,15 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+    # Resource limits - adjust for production
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     networks:
       - ai-platform-network
 
@@ -183,6 +235,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # Resource limits for application modules
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     networks:
       - ai-platform-network
 
@@ -218,6 +279,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # Resource limits for application modules
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     networks:
       - ai-platform-network
 
@@ -256,16 +326,23 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    # Resource limits for core-processing (higher for LLM inference)
+    # Uncomment GPU section below for GPU support (requires nvidia-docker)
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '1'
+          memory: 2G
+        # GPU support - uncomment for NVIDIA GPU
+        # devices:
+        #   - driver: nvidia
+        #     count: 1
+        #     capabilities: [gpu]
     networks:
       - ai-platform-network
-    # Uncomment below for GPU support (requires nvidia-docker)
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
 
   # Module 4: Data Integration
   data-integration:
@@ -296,6 +373,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # Resource limits for application modules
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     networks:
       - ai-platform-network
 
@@ -333,6 +419,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # Resource limits for application modules
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
     networks:
       - ai-platform-network
 
@@ -367,6 +462,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # Resource limits for infrastructure (Ray workers)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
     networks:
       - ai-platform-network
 

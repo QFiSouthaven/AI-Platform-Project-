@@ -4,7 +4,9 @@ Configuration settings for the Data Integration module.
 Uses Pydantic BaseSettings for environment variable management.
 """
 
+import sys
 from functools import lru_cache
+from pathlib import Path
 from typing import List, Optional
 
 from pydantic_settings import BaseSettings

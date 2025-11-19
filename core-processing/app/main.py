@@ -5,6 +5,13 @@ This module provides AI-driven code generation, debugging, and optimization
 using Large Language Models from Hugging Face.
 """
 
+import sys
+
+# Windows-specific event loop policy for asyncio compatibility
+if sys.platform == 'win32':
+    import asyncio
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 import asyncio
 import logging
 import time
